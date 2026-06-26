@@ -1,0 +1,8 @@
+{
+  "slug": "aie-app-blog",
+  "displayName": "AIE·App 기술 블로그",
+  "github": "fnf-deepHeading/aie-app-blog",
+  "runtime": "node",
+  "start": "npm start",
+  "port": 3000
+}
