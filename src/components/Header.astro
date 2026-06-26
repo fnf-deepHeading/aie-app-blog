@@ -61,15 +61,29 @@ const isActive = (href: string) =>
     align-items: center;
   }
   .nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
     font-family: var(--mono);
     font-size: var(--fs-xs);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink-2);
-    padding-bottom: 2px;
-    border-bottom: 1.5px solid transparent;
-    transition: color .2s var(--ease), border-color .2s var(--ease);
+    /* 탭 타깃 확보 — 모바일에서 누르기 편하게 */
+    padding: 0.7rem 0.4rem;
+    transition: color .2s var(--ease);
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0.4rem;
+    right: 0.4rem;
+    bottom: 0.55rem;
+    height: 1.5px;
+    background: transparent;
+    transition: background .2s var(--ease);
   }
   .nav-link:hover { color: var(--ink); }
-  .nav-link.active { color: var(--clay-2); border-color: var(--clay); }
+  .nav-link.active { color: var(--clay-2); }
+  .nav-link.active::after { background: var(--clay); }
 </style>
