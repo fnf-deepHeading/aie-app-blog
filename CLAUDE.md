@@ -30,11 +30,10 @@ AIE·App 파트의 팀 기술 블로그. Astro 기반 정적 사이트.
 
 ## 이미지 저장 전략 (결정 A, 2026-06-26)
 - **텍스트(마크다운)는 git, 이미지·미디어만 S3.** 텍스트는 글 수천 편이어도 수 MB라 git 이 최적(PR 리뷰·이력·content collection 타입검증). 이미지는 repo 비대화 + runtime-fetch 콜드스타트 지연의 주범 → S3 로 분리.
-- 업로드 도구: `scripts/upload-image.mjs` (`npm run upload:image -- <파일> [하위경로]`). DCS AI **Presigned URL API**(`/sign` → PUT) 사용, AWS SDK 직접 사용 금지. 의존성 없음.
-- S3 key 규칙: `aie-app-blog/prd/<하위경로>/<슬러그>-<내용해시8>.<ext>` (버킷 `svc-fnf-ax-platform-pub-s3`).
-- 마크다운에서는 업로드 후 출력된 공개 URL 을 `![](...)` 로 참조. Astro 는 외부 URL `<img>` 로 그대로 emit(빌드 메모리 영향 없음).
-- **미해결 의존(담당자 필요)**: ① `S3_API_KEY` 발급(DCS AI QnA 채널) ② `svc-fnf-ax-platform-pub-s3` 객체가 직접 공개 URL(public-read)로 열리는지 확인. 만약 public-read 가 안 되면(정적 사이트는 view 시점에 presign 불가) 대안은 앱을 경량 Node 서버로 바꿔 S3 presigned GET 프록시를 두는 것(= embedded 풀스택 전환, 더 큰 변경).
-- `.env`(S3_API_KEY)는 커밋 금지. `.gitignore` 에 포함됨.
+- 저장 위치: `s3://svc-fnf-dcs-ai-s3/aie-app-agent/blog/<하위경로>/<슬러그>-<내용해시8>.<ext>`.
+- 업로드 도구: `scripts/upload-image.mjs` (`npm run upload:image -- <파일> [하위경로]`). **AWS CLI + SSO 프로파일 `aws-prcs-sso-dt`** 로 `aws s3 cp`. 별도 API 키 불필요. 의존성 없음. SSO 만료 시 `aws sso login --profile aws-prcs-sso-dt`(쿠키 직접).
+- 서빙: `svc-fnf-dcs-ai-s3` 객체는 **public-read** → 직접 URL `https://svc-fnf-dcs-ai-s3.s3.ap-northeast-2.amazonaws.com/<key>` 로 `<img>` 로드(검증 완료 2026-06-26). Astro 는 외부 URL `<img>` 로 그대로 emit(빌드 영향 없음). 콘텐츠 해시 파일명 + `cache-control: immutable`.
+- (참고) 같은 목적의 DCS AI Presigned URL API(`svc-fnf-ax-platform-pub-s3`, x-api-key)도 있으나, 정적 사이트엔 view 시점 presign 이 안 맞아 위 SSO+public-read 경로를 채택.
 
 ## 글 추가
 `src/content/posts/*.md(x)` 추가. 프론트매터 스키마는 `src/content.config.ts`가 검증(필수: title/description/category/pubDate). `draft: true`는 빌드 제외, `featured: true`는 홈 상단 고정. 자세한 건 `README.md`.
