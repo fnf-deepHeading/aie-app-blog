@@ -1,0 +1,75 @@
+---
+import { SITE, NAV } from '../consts';
+const path = Astro.url.pathname;
+const isActive = (href: string) =>
+  href === '/' ? path === '/' : path.startsWith(href);
+---
+<header class="site-header">
+  <div class="wrap bar">
+    <a href="/" class="brand" aria-label={`${SITE.title} 블로그 홈`}>
+      <span class="brand-mark">{SITE.title}</span>
+      <span class="brand-sub mono">tech&nbsp;blog</span>
+    </a>
+    <nav aria-label="주요">
+      <ul>
+        {NAV.map((item) => (
+          <li>
+            <a href={item.href} class:list={['nav-link', { active: isActive(item.href) }]}>
+              {item.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: saturate(140%) blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 4.25rem;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+  .brand-mark {
+    font-family: var(--serif);
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+  .brand-sub {
+    font-size: 0.7rem;
+    color: var(--ink-3);
+    letter-spacing: 0.18em;
+  }
+  nav ul {
+    display: flex;
+    gap: 1.6rem;
+    align-items: center;
+  }
+  .nav-link {
+    font-family: var(--mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    padding-bottom: 2px;
+    border-bottom: 1.5px solid transparent;
+    transition: color .2s var(--ease), border-color .2s var(--ease);
+  }
+  .nav-link:hover { color: var(--ink); }
+  .nav-link.active { color: var(--clay-2); border-color: var(--clay); }
+</style>

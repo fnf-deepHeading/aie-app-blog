@@ -1,0 +1,42 @@
+---
+import { SITE } from '../consts';
+const year = new Date().getFullYear();
+---
+<footer class="site-footer">
+  <div class="wrap inner">
+    <div class="col">
+      <p class="ft-brand">{SITE.title}</p>
+      <p class="ft-tag">{SITE.tagline}</p>
+    </div>
+    <div class="col links">
+      <a href="/rss.xml" class="mono">RSS</a>
+      <a href="/about" class="mono">소개</a>
+    </div>
+    <p class="copy mono">© {year} AIE·App Part — F&amp;F</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: 6rem;
+    border-top: 1px solid var(--line);
+    background: var(--paper-2);
+  }
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1.5rem 3rem;
+    padding-block: 3rem;
+  }
+  .col { display: flex; flex-direction: column; gap: 0.3rem; }
+  .ft-brand { font-family: var(--serif); font-size: 1.4rem; }
+  .ft-tag { color: var(--ink-2); font-size: var(--fs-sm); }
+  .links { flex-direction: row; gap: 1.2rem; }
+  .links a { color: var(--ink-2); transition: color .2s var(--ease); }
+  .links a:hover { color: var(--clay-2); }
+  .copy { margin-left: auto; color: var(--ink-3); align-self: flex-end; }
+  @media (max-width: 640px) {
+    .copy { margin-left: 0; width: 100%; }
+  }
+</style>

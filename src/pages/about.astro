@@ -1,0 +1,89 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../consts';
+
+const principles = [
+  {
+    k: '데모가 아니라 운영',
+    v: '되는 걸 보여주는 건 시작일 뿐이다. 사업부가 매일 쓰는 플랫폼으로 만드는 과정 — 배포·권한·안정화·비용까지 적는다.',
+  },
+  {
+    k: '결정을 남긴다',
+    v: '코드보다 오래 가는 건 “왜 그렇게 했나”다. 선택지와 트레이드오프, 기각한 안까지 적는다.',
+  },
+  {
+    k: '헛디딘 것도 쓴다',
+    v: '잘된 사례만 모으면 광고가 된다. 되돌린 결정, 틀린 가정, 새벽에 잡은 장애도 똑같이 기록한다.',
+  },
+];
+---
+<Base title="소개" description="AIE·App 파트가 이 블로그를 쓰는 이유.">
+  <section class="about wrap">
+    <p class="eyebrow">소개</p>
+    <h1 class="about-title">
+      앱을 만드는<br />사람들의 기록.
+    </h1>
+    <p class="about-lead">
+      {SITE.title} 파트는 F&amp;F 사업부가 쓰는 사내 AI 플랫폼(DCS AI)과 에이전트,
+      데이터 분석계를 만듭니다. 여기에는 그걸 만들며 부딪힌 문제와 풀어낸 과정을
+      적습니다. 발표용으로 다듬은 사례집이 아니라, 다음 사람이 같은 곳에서 덜
+      헤매도록 남기는 작업 노트에 가깝습니다.
+    </p>
+
+    <ul class="principles">
+      {principles.map((p, i) => (
+        <li class="principle">
+          <span class="p-idx mono">{String(i + 1).padStart(2, '0')}</span>
+          <div>
+            <h2 class="p-k">{p.k}</h2>
+            <p class="p-v">{p.v}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    <div class="about-foot">
+      <p class="mono">함께 만들고 싶다면 — App Part, F&amp;F</p>
+      <a href="/" class="back mono">← 글 보러 가기</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .about { max-width: var(--measure-post); padding-top: clamp(2.5rem, 6vw, 4.5rem); padding-bottom: 2rem; }
+  .about-title {
+    font-size: clamp(2.5rem, 7vw, var(--fs-2xl));
+    line-height: 1.06;
+    margin-top: 1.3rem;
+  }
+  .about-lead {
+    margin-top: 1.6rem;
+    max-width: var(--measure-text);
+    font-size: var(--fs-md);
+    line-height: 1.62;
+    color: var(--ink-2);
+  }
+  .principles {
+    margin-top: 3.5rem;
+    border-top: 2px solid var(--ink);
+  }
+  .principle {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.8rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .p-idx { color: var(--clay); padding-top: 0.35rem; font-weight: 500; }
+  .p-k { font-size: var(--fs-lg); line-height: 1.2; }
+  .p-v { margin-top: 0.5rem; color: var(--ink-2); max-width: 40rem; line-height: 1.6; }
+  .about-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 2.5rem;
+  }
+  .about-foot .mono { color: var(--ink-3); }
+  .back { color: var(--clay-2) !important; }
+</style>

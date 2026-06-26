@@ -1,0 +1,255 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import PostCard from '../components/PostCard.astro';
+
+const all = (await getCollection('posts', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+const featured = all.find((p) => p.data.featured) ?? all[0];
+// 최신 글을 맨 앞에 두고, 나머지는 시간 역순 그대로
+const ordered = featured ? [featured, ...all.filter((p) => p.id !== featured.id)] : all;
+const total = all.length;
+
+// 카테고리 + 글 수 (많은 순)
+const counts = new Map<string, number>();
+for (const p of all) counts.set(p.data.category, (counts.get(p.data.category) ?? 0) + 1);
+const categories = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+---
+<Base>
+  <!-- Hero: thesis statement -->
+  <section class="hero wrap">
+    <p class="eyebrow">AIE · App Part — 기술 블로그</p>
+    <h1 class="hero-title">
+      사내 AI를<br />
+      <em>제품</em>으로 만든다.
+    </h1>
+    <p class="hero-lead">
+      F&amp;F 사업부가 매일 쓰는 AI 플랫폼과 에이전트, 데이터 파이프라인을 만듭니다.
+      모델을 붙이는 것보다 어려운 건 그 다음 — 배포, 권한, 운영, 그리고 사람들이
+      진짜로 쓰게 만드는 일. 그 과정을 기록합니다.
+    </p>
+  </section>
+
+  <section class="board wrap">
+    <!-- 좌측 카테고리 -->
+    <aside class="sidebar" aria-label="카테고리">
+      <p class="side-h mono">카테고리</p>
+      <ul class="cats">
+        <li>
+          <button type="button" class="cat" data-cat="all" aria-current="true">
+            <span class="cat-name">전체</span>
+            <span class="cat-count mono">{total}</span>
+          </button>
+        </li>
+        {categories.map(([name, count]) => (
+          <li>
+            <button type="button" class="cat" data-cat={name} aria-current="false">
+              <span class="cat-name">{name}</span>
+              <span class="cat-count mono">{count}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </aside>
+
+    <!-- 메인: 툴바 + 글 -->
+    <div class="main">
+      <div class="toolbar">
+        <span class="count mono" data-count>{total}편</span>
+        <div class="views" role="group" aria-label="보기 방식">
+          <button type="button" class="vbtn" data-view="grid" aria-label="그리드 보기" aria-pressed="true">
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor">
+              <rect x="1" y="1" width="6" height="6" rx="1"></rect>
+              <rect x="9" y="1" width="6" height="6" rx="1"></rect>
+              <rect x="1" y="9" width="6" height="6" rx="1"></rect>
+              <rect x="9" y="9" width="6" height="6" rx="1"></rect>
+            </svg>
+          </button>
+          <button type="button" class="vbtn" data-view="list" aria-label="리스트 보기" aria-pressed="false">
+            <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="currentColor">
+              <rect x="1" y="2" width="14" height="2.4" rx="1"></rect>
+              <rect x="1" y="6.8" width="14" height="2.4" rx="1"></rect>
+              <rect x="1" y="11.6" width="14" height="2.4" rx="1"></rect>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="posts is-grid" id="posts">
+        {ordered.map((post, i) => (
+          <PostCard post={post} index={total - 1 - i} featured={post.id === featured?.id} />
+        ))}
+      </div>
+      <p class="empty" data-empty hidden>이 카테고리엔 아직 글이 없습니다.</p>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const posts = document.getElementById('posts')!;
+  const cards = Array.from(posts.querySelectorAll<HTMLElement>('.card'));
+  const countEl = document.querySelector<HTMLElement>('[data-count]')!;
+  const emptyEl = document.querySelector<HTMLElement>('[data-empty]')!;
+  const viewBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-view]'));
+  const catBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-cat]'));
+
+  // ── 뷰 전환 (localStorage 기억) ──────────────────────
+  function setView(v: string) {
+    posts.classList.toggle('is-grid', v === 'grid');
+    posts.classList.toggle('is-list', v === 'list');
+    viewBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+    try { localStorage.setItem('aie-view', v); } catch {}
+  }
+  viewBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.view!)));
+  let saved = 'grid';
+  try { saved = localStorage.getItem('aie-view') || 'grid'; } catch {}
+  setView(saved);
+
+  // ── 카테고리 필터 ────────────────────────────────────
+  function setCat(c: string) {
+    let n = 0;
+    cards.forEach((card) => {
+      const show = c === 'all' || card.dataset.category === c;
+      card.hidden = !show;
+      if (show) n++;
+    });
+    catBtns.forEach((b) => b.setAttribute('aria-current', String(b.dataset.cat === c)));
+    countEl.textContent = `${n}편`;
+    emptyEl.hidden = n > 0;
+  }
+  catBtns.forEach((b) => b.addEventListener('click', () => setCat(b.dataset.cat!)));
+</script>
+
+<style>
+  .hero {
+    padding-top: clamp(3rem, 8vw, 6rem);
+    padding-bottom: clamp(2rem, 4vw, 3rem);
+  }
+  .hero-title {
+    font-size: clamp(2.75rem, 8vw, var(--fs-3xl));
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-top: 1.4rem;
+    max-width: 16ch;
+  }
+  .hero-title em { font-style: italic; color: var(--clay); }
+  .hero-lead {
+    margin-top: 1.6rem;
+    max-width: 34rem;
+    font-size: var(--fs-md);
+    line-height: 1.6;
+    color: var(--ink-2);
+  }
+
+  /* ── Board: 사이드바 + 메인 ─────────────────────────── */
+  .board {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+    padding-top: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  .sidebar { position: sticky; top: 5.5rem; }
+  .side-h {
+    color: var(--ink-3);
+    letter-spacing: 0.14em;
+    padding-bottom: 0.9rem;
+    margin-bottom: 0.4rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .cats { display: flex; flex-direction: column; }
+  .cat {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    padding: 0.7rem 0;
+    cursor: pointer;
+    color: var(--ink-2);
+    font-family: var(--sans);
+    font-size: var(--fs-sm);
+    text-align: left;
+    white-space: nowrap;
+    transition: color .18s var(--ease);
+  }
+  .cat:hover { color: var(--ink); }
+  .cat-count { color: var(--ink-3); font-size: var(--fs-xs); }
+  .cat[aria-current='true'] { color: var(--clay-2); font-weight: 600; }
+  .cat[aria-current='true'] .cat-count { color: var(--clay); }
+
+  /* ── Toolbar ────────────────────────────────────────── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .count { color: var(--ink-2); }
+  .views { display: inline-flex; gap: 0.3rem; }
+  .vbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    background: var(--paper);
+    color: var(--ink-3);
+    cursor: pointer;
+    transition: color .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease);
+  }
+  .vbtn:hover { color: var(--ink-2); }
+  .vbtn[aria-pressed='true'] {
+    color: var(--paper);
+    background: var(--ink);
+    border-color: var(--ink);
+  }
+
+  /* ── Posts container ────────────────────────────────── */
+  .posts.is-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+  @media (max-width: 1080px) {
+    .posts.is-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  .posts.is-list { display: block; }
+  .empty { padding: 3rem 0; color: var(--ink-3); }
+
+  /* ── 반응형 ─────────────────────────────────────────── */
+  @media (max-width: 860px) {
+    .board { grid-template-columns: 1fr; gap: 1.5rem; }
+    .sidebar { position: static; }
+    .side-h { display: none; }
+    .cats {
+      flex-direction: row;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.4rem;
+      scrollbar-width: none;
+    }
+    .cats::-webkit-scrollbar { display: none; }
+    .cat {
+      flex: 0 0 auto;
+      border: 1px solid var(--line-2);
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem;
+      gap: 0.45rem;
+    }
+    .cat[aria-current='true'] { border-color: var(--clay); background: var(--clay-wash); }
+  }
+  @media (max-width: 560px) {
+    .posts.is-grid { grid-template-columns: 1fr; }
+  }
+</style>

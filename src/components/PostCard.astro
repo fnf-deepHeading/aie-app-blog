@@ -1,0 +1,94 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import FormattedDate from './FormattedDate.astro';
+import { readingTime } from '../utils';
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+  index?: number; // 아카이브 인덱스 (시간순 일련번호) — 리스트 뷰에서만 표시
+  featured?: boolean;
+}
+const { post, index, featured = false } = Astro.props;
+const { title, description, category, pubDate, tags } = post.data;
+const mins = readingTime(post.body);
+const num = index !== undefined ? String(index).padStart(2, '0') : null;
+---
+<article class:list={['card', { 'is-featured': featured }]} data-category={category}>
+  <a href={`/posts/${post.id}/`} class="card-link" aria-label={title}>
+    <div class="card-top">
+      {num && <span class="idx mono" aria-hidden="true">{num}</span>}
+      <span class="eyebrow">{category}</span>
+      {featured && <span class="latest mono">최신</span>}
+    </div>
+    <h3 class="card-title">{title}</h3>
+    <p class="card-desc">{description}</p>
+    <div class="card-meta">
+      <FormattedDate date={pubDate} />
+      <span class="dot" aria-hidden="true">·</span>
+      <span class="mono">{mins}분</span>
+      {tags.length > 0 && (
+        <span class="tags">
+          {tags.slice(0, 3).map((t) => <span class="tag mono">#{t}</span>)}
+        </span>
+      )}
+    </div>
+  </a>
+</article>
+
+<style>
+  /* ── 공통 ─────────────────────────────────────────── */
+  .card { transition: border-color .25s var(--ease), transform .25s var(--ease); }
+  .card[hidden] { display: none; }
+  .card-top { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.7rem; }
+  .idx { color: var(--ink-3); font-weight: 500; }
+  .latest {
+    margin-left: auto;
+    color: var(--clay-2);
+    background: var(--clay-wash);
+    border: 1px solid color-mix(in srgb, var(--clay) 30%, transparent);
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    letter-spacing: 0.1em;
+  }
+  .card-title { font-size: var(--fs-lg); line-height: 1.2; transition: color .2s var(--ease); }
+  .card-link:hover .card-title { color: var(--clay-2); }
+  .card-desc { margin-top: 0.5rem; color: var(--ink-2); font-size: var(--fs-base); line-height: 1.55; }
+  .card-meta { display: flex; align-items: center; gap: 0.55rem; margin-top: 1rem; flex-wrap: wrap; }
+  .dot { color: var(--ink-3); }
+  .tags { display: inline-flex; gap: 0.55rem; margin-left: 0.4rem; }
+  .tag { color: var(--ink-3); }
+
+  /* ── 리스트 뷰 (조상 .posts.is-list) ───────────────── */
+  :global(.posts.is-list) .card { border-top: 1px solid var(--line-2); }
+  :global(.posts.is-list) .card:hover { border-color: var(--clay); }
+  :global(.posts.is-list) .card-link { display: block; padding: 1.6rem 0 1.8rem; }
+  :global(.posts.is-list) .card-desc { max-width: 42rem; }
+  :global(.posts.is-list) .card.is-featured .card-title { font-size: var(--fs-xl); }
+
+  /* ── 그리드 뷰 (조상 .posts.is-grid) ──────────────── */
+  :global(.posts.is-grid) .idx { display: none; } /* 번호는 아카이브(리스트) 어포던스 */
+  :global(.posts.is-grid) .card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--paper);
+  }
+  :global(.posts.is-grid) .card:hover { border-color: var(--clay); transform: translateY(-3px); }
+  :global(.posts.is-grid) .card-link {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1.4rem 1.4rem 1.5rem;
+  }
+  :global(.posts.is-grid) .card-desc { margin-bottom: 0.4rem; }
+  :global(.posts.is-grid) .card-meta { margin-top: auto; padding-top: 1rem; }
+
+  /* 그리드에서 최신 글은 한 줄 전체를 차지하는 큰 카드 */
+  :global(.posts.is-grid) .card.is-featured { grid-column: 1 / -1; background: var(--paper-2); }
+  :global(.posts.is-grid) .card.is-featured .card-link { padding: clamp(1.6rem, 4vw, 2.6rem); }
+  :global(.posts.is-grid) .card.is-featured .card-title {
+    font-size: clamp(1.9rem, 4vw, var(--fs-2xl));
+    max-width: 18ch;
+    margin-top: 0.3rem;
+  }
+  :global(.posts.is-grid) .card.is-featured .card-desc { font-size: var(--fs-md); max-width: 44rem; }
+</style>
