@@ -46,8 +46,10 @@ AIE·App 파트의 팀 기술 블로그. Astro 기반 정적 사이트.
 - `src/pages/posts/[...slug].astro` — 글 상세(이전/다음 네비).
 - `src/utils.ts` — 한글/영문 혼용 읽는 시간 추정.
 
-## 실행
-`npm run dev` (4321) / `npm run build` / `npm run preview`. 배포 전 `astro.config.mjs`의 `site`를 실제 도메인으로.
+## 실행 / 배포
+- 로컬: `npm run dev` (4321) / `npm run build` / `npm run preview`.
+- 배포(K8s): main 에 push 후 `npm run deploy`(= `dcs-ai-cli app redeploy aie-app-blog`) 또는 대시보드 ··· → 재배포.
+- **편집·발행 흐름(비개발자 포함)**: GitHub 웹/Desktop 에서 `src/content/posts/*.md` 수정·추가 → 재배포 버튼. 자동 deploy-on-push 는 미구성 — `dcs-ai-cli` 가 macOS arm64 전용 바이너리라 GitHub Actions(리눅스)에서 못 돎. (대안: CLI 의 리눅스 빌드 확보 또는 redeploy API 직접 호출 — 후자는 키 노출/엔드포인트 가드 이슈로 보류.)
 
 ## 컨벤션
 - 컴포넌트 스타일은 해당 `.astro`의 `<style>`에 스코프드로. 토큰·prose·공용 헬퍼(`.mono`/`.eyebrow`/`.wrap`)만 전역.
