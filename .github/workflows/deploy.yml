@@ -42,8 +42,8 @@ jobs:
           APP_ID: 5231337c-2a88-4de1-8cab-74fb5e6025f5
         run: |
           if [ -z "$DCSAI_API_KEY" ]; then
-            echo "::error::DCSAI_API_KEY 시크릿이 없습니다. 레포 Settings → Secrets and variables → Actions 에 추가하세요."
-            exit 1
+            echo "::notice::DCSAI_API_KEY 시크릿 미설정 — 자동 재배포 건너뜀. 빌드는 검증됨. 발행하려면 대시보드 '재배포' 또는 npm run deploy."
+            exit 0
           fi
           code=$(curl -sS -o resp.json -w "%{http_code}" -X POST \
             -H "Authorization: Bearer $DCSAI_API_KEY" \
