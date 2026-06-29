@@ -36,7 +36,12 @@ AIE·App 파트의 팀 기술 블로그. Astro 기반 정적 사이트.
 - (참고) 같은 목적의 DCS AI Presigned URL API(`svc-fnf-ax-platform-pub-s3`, x-api-key)도 있으나, 정적 사이트엔 view 시점 presign 이 안 맞아 위 SSO+public-read 경로를 채택.
 
 ## 글 추가
-`src/content/posts/*.md(x)` 추가. 프론트매터 스키마는 `src/content.config.ts`가 검증(필수: title/description/category/pubDate). `draft: true`는 빌드 제외, `featured: true`는 홈 상단 고정. 자세한 건 `README.md`.
+`src/content/posts/*.md(x)` 추가. 프론트매터 스키마는 `src/content.config.ts`가 검증(필수: title/description/category/pubDate). `draft: true`는 빌드 제외. 자세한 건 `README.md`.
+
+## 최상단 고정 글 (featured)
+홈 최상단 고정 글의 **단일 진실원천 = `src/featured.json`** (`{"slug": "..."}`). `index.astro`가 이 slug를 1순위로 읽고, 없으면 frontmatter `featured: true`, 그것도 없으면 최신 글 순으로 폴백.
+- **`/admin` 페이지**(noindex·sitemap 제외, 네비에 미노출)에서 GUI로 고정 글을 바꾼다 — 글 목록에서 라디오 선택 → 저장하면 fine-grained PAT(이 레포 Contents R/W)로 `featured.json` 한 파일만 GitHub Contents API 커밋(1커밋·1빌드) → push 자동배포로 ~1분 뒤 반영. 토큰은 관리자 브라우저 localStorage에만 보관.
+- 정적 사이트라 "상단 글"은 빌드 시점에 박힘 → 변경은 반드시 소스 커밋+재빌드를 거친다(이게 /admin이 커밋을 하는 이유).
 
 ## 주요 파일
 - `src/styles/global.css` — 디자인 토큰 + prose(본문) 스타일. **디자인 변경의 1차 진입점.**
