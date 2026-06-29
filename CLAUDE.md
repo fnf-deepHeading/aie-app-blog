@@ -48,8 +48,11 @@ AIE·App 파트의 팀 기술 블로그. Astro 기반 정적 사이트.
 
 ## 실행 / 배포
 - 로컬: `npm run dev` (4321) / `npm run build` / `npm run preview`.
-- 배포(K8s): main 에 push 후 `npm run deploy`(= `dcs-ai-cli app redeploy aie-app-blog`) 또는 대시보드 ··· → 재배포.
-- **편집·발행 흐름(비개발자 포함)**: GitHub 웹/Desktop 에서 `src/content/posts/*.md` 수정·추가 → 재배포 버튼. 자동 deploy-on-push 는 미구성 — `dcs-ai-cli` 가 macOS arm64 전용 바이너리라 GitHub Actions(리눅스)에서 못 돎. (대안: CLI 의 리눅스 빌드 확보 또는 redeploy API 직접 호출 — 후자는 키 노출/엔드포인트 가드 이슈로 보류.)
+- **두 배포 타깃이 공존**한다. `astro.config.mjs` 가 `GITHUB_PAGES` 환경변수로 `site`/`base` 를 분기:
+  - **GitHub Pages (공개·정본 공유 URL)** — `https://fnf-deepheading.github.io/aie-app-blog/`. main 에 push 하면 `.github/workflows/pages.yml` 이 리눅스 러너에서 빌드(`GITHUB_PAGES=true` → base `/aie-app-blog`)→ Pages 로 **자동 배포**. 글마다 직접 열리는 개별 URL(`/posts/<슬러그>/`)을 가져 외부 공유·북마크 가능. (레포는 이를 위해 public. org 가 free 플랜이라 private Pages 불가 → public 필수였음.)
+  - **DCS AI K8s embedded (사내)** — `https://aie-app-blog.apps.dcsai.fnf.co.kr` (base `/`). main push 후 `npm run deploy`(= `dcs-ai-cli app redeploy aie-app-blog`) 또는 대시보드 ··· → 재배포. **단, DCS AI 대시보드(`/apps/aie-app-blog`)가 앱을 iframe 으로 감싸 서빙해 개별 글의 공유 URL 이 안 잡힌다**(서브도메인 직접 딥링크는 홈으로 리디렉션). → 공유가 필요하면 GitHub Pages URL 을 쓴다.
+- **내부 링크는 전부 `withBase()`(`src/utils.ts`) 를 통과**해야 한다 — base 가 `/aie-app-blog` 든 `/` 든 양쪽에서 무404. 새 링크/자산 추가 시 raw `/...` 금지.
+- **편집·발행 흐름(비개발자 포함)**: GitHub 웹/Desktop 에서 `src/content/posts/*.md` 수정·추가 → push 하면 Pages 는 자동 반영. 사내(dcsai)도 같이 올리려면 대시보드 재배포 버튼(또는 `npm run deploy`). `deploy.yml` 은 push 시 빌드검증 후 `DCSAI_API_KEY` 시크릿이 있으면 dcsai 재배포까지 트리거(미설정 시 건너뜀).
 
 ## 컨벤션
 - 컴포넌트 스타일은 해당 `.astro`의 `<style>`에 스코프드로. 토큰·prose·공용 헬퍼(`.mono`/`.eyebrow`/`.wrap`)만 전역.
