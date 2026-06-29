@@ -21,11 +21,13 @@ export async function getStaticPaths() {
 
 const { post, prev, next } = Astro.props;
 const { title, description, category, pubDate, updatedDate, author, tags } = post.data;
-const { Content } = await render(post);
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+const hasToc = toc.length > 2;
 const mins = readingTime(post.body);
 ---
 <Base title={title} description={description}>
-  <article>
+  <article class:list={{ 'has-toc': hasToc }}>
     <header class="post-head wrap">
       <span class="eyebrow">{category}</span>
       <h1 class="post-title">{title}</h1>
@@ -43,15 +45,32 @@ const mins = readingTime(post.body);
     </header>
 
     <div class="post-body wrap">
-      <div class="prose">
-        <Content />
-      </div>
-
-      {tags.length > 0 && (
-        <div class="post-tags">
-          {tags.map((t) => <span class="tag mono">#{t}</span>)}
-        </div>
+      {hasToc && (
+        <details class="toc" open>
+          <summary class="toc-label mono">목차</summary>
+          <nav aria-label="목차">
+            <ol>
+              {toc.map((h) => (
+                <li class={`toc-d${h.depth}`}>
+                  <a href={`#${h.slug}`} data-slug={h.slug}>{h.text}</a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </details>
       )}
+
+      <div class="post-content">
+        <div class="prose">
+          <Content />
+        </div>
+
+        {tags.length > 0 && (
+          <div class="post-tags">
+            {tags.map((t) => <span class="tag mono">#{t}</span>)}
+          </div>
+        )}
+      </div>
     </div>
 
     <nav class="post-nav wrap" aria-label="다른 글">
@@ -105,6 +124,81 @@ const mins = readingTime(post.body);
   .updated { color: var(--ink-3); }
 
   .post-body { padding-top: 2.5rem; }
+
+  /* 앵커 점프 시 헤딩이 화면 맨 위에 딱 붙지 않게 */
+  .prose :global(h2), .prose :global(h3) { scroll-margin-top: 1.5rem; }
+
+  /* --- 목차 (TOC) ------------------------------------------- */
+  .toc {
+    margin-bottom: 2.5rem;
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    max-width: var(--measure-text);
+  }
+  .toc-label {
+    cursor: pointer;
+    color: var(--ink-2);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+  .toc-label::-webkit-details-marker { display: none; }
+  .toc-label::before {
+    content: '';
+    width: 1.4em; height: 1px;
+    background: var(--clay);
+  }
+  .toc nav { margin-top: 0.9rem; }
+  .toc ol { display: flex; flex-direction: column; gap: 0.1rem; }
+  .toc li { max-width: none; }
+  .toc a {
+    display: block;
+    padding: 0.28rem 0;
+    font-size: var(--fs-sm);
+    line-height: 1.4;
+    color: var(--ink-2);
+    border-left: 2px solid transparent;
+    padding-left: 0.8rem;
+    margin-left: -0.8rem;
+    transition: color .15s var(--ease), border-color .15s var(--ease);
+  }
+  .toc a:hover { color: var(--clay-2); }
+  .toc-d3 a { padding-left: 1.9rem; font-size: var(--fs-xs); color: var(--ink-3); }
+  .toc a.is-active { color: var(--clay-2); border-left-color: var(--clay); }
+
+  /* 와이드 화면: 목차를 읽기 컬럼 왼쪽 레일로 — 본문/헤더/네비 정렬을 함께 맞춘다 */
+  @media (min-width: 1180px) {
+    .has-toc .post-head,
+    .has-toc .post-nav {
+      max-width: calc(var(--measure-post) + 16rem);
+      padding-left: calc(var(--gut) + 16rem);
+    }
+    .has-toc .post-body {
+      max-width: calc(var(--measure-post) + 16rem);
+      display: grid;
+      grid-template-columns: 13rem minmax(0, 1fr);
+      column-gap: 3rem;
+      align-items: start;
+    }
+    .has-toc .toc {
+      position: sticky;
+      top: 2rem;
+      margin-bottom: 0;
+      padding: 0;
+      border: none;
+      background: none;
+      max-width: none;
+      max-height: calc(100vh - 4rem);
+      overflow-y: auto;
+    }
+    .has-toc .toc[open] .toc-label,
+    .has-toc .toc .toc-label { pointer-events: none; }
+    .has-toc .toc-label::-webkit-details-marker { display: none; }
+  }
+
   .post-tags {
     display: flex;
     flex-wrap: wrap;
@@ -153,3 +247,42 @@ const mins = readingTime(post.body);
     .nav-card.next { text-align: left; align-items: flex-start; }
   }
 </style>
+
+<script>
+  // 스크롤에 따라 현재 섹션을 목차에서 하이라이트
+  const links = new Map<string, HTMLElement>();
+  document.querySelectorAll<HTMLElement>('.toc a[data-slug]').forEach((a) => {
+    const slug = a.dataset.slug;
+    if (slug) links.set(slug, a);
+  });
+
+  if (links.size) {
+    const headings = document.querySelectorAll<HTMLElement>('.prose h2, .prose h3');
+    let active: string | null = null;
+
+    const setActive = (slug: string | null) => {
+      if (slug === active) return;
+      if (active) links.get(active)?.classList.remove('is-active');
+      if (slug) links.get(slug)?.classList.add('is-active');
+      active = slug;
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // 화면 상단 가까이에 보이는 헤딩들 중 가장 위의 것을 활성화
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .map((e) => e.target as HTMLElement);
+        if (visible.length) {
+          const top = visible.reduce((a, b) =>
+            a.getBoundingClientRect().top < b.getBoundingClientRect().top ? a : b
+          );
+          if (top.id) setActive(top.id);
+        }
+      },
+      { rootMargin: '0px 0px -75% 0px', threshold: 0 }
+    );
+
+    headings.forEach((h) => h.id && observer.observe(h));
+  }
+</script>

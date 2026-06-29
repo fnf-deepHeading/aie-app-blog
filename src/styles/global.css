@@ -40,9 +40,9 @@
 
   /* layout */
   --measure: 96rem;     /* page max — 넓은 에디토리얼 컨테이너 */
-  --measure-text: 42rem;/* 글 본문 읽기 폭 */
-  --measure-post: 54rem;/* 글 상세 컨텐츠 컬럼 */
-  --gut: clamp(1.25rem, 4vw, 3.5rem);
+  --measure-text: 46rem;/* 글 본문 읽기 폭 */
+  --measure-post: 58rem;/* 글 상세 컨텐츠 컬럼 */
+  --gut: clamp(1.1rem, 3vw, 2.25rem);
   --radius: 4px;        /* mostly square — editorial */
   --radius-lg: 10px;
 
