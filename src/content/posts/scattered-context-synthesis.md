@@ -55,44 +55,97 @@ tags: ["orchestration", "multi-source", "pipeline", "weekly-report", "architectu
 
 그래서 이걸 한 프롬프트가 아니라 **역할이 다른 AI 에이전트들의 조립**으로 만들었다. 전체 모양은 이렇다 — 핵심은 사람별로 한 번(나눔), 프로젝트별로 한 번(합침), **두 번 모양을 바꾼다**는 것.
 
-<svg viewBox="0 0 720 520" width="100%" style="max-width:720px;height:auto;display:block;margin:1.2rem auto" role="img" aria-label="아키텍처: 흩어진 소스 → 사람별 병렬 합성 → 개인 위클리 → 프로젝트 목록 뼈대 → 프로젝트별 작성·비평·수정 → 파트 주간보고" font-family="'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 760" width="100%" style="max-width:720px;height:auto;display:block;margin:1.2rem auto" role="img" aria-label="아키텍처: 흩어진 소스 → 사람별 병렬 합성 → 개인 위클리 → 프로젝트 목록 뼈대 → 프로젝트별 작성·비평·수정 → 파트 주간보고" font-family="'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif">
   <defs>
-    <marker id="ag" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#8A8175" stroke-width="1.4"/></marker>
-    <marker id="at" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#C25B3A" stroke-width="1.4"/></marker>
+    <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="7.5" refY="5" orient="auto">
+      <path d="M1 1 L8 5 L1 9" fill="none" stroke="#8A8175" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-terra" markerWidth="10" markerHeight="10" refX="7.5" refY="5" orient="auto">
+      <path d="M1 1 L8 5 L1 9" fill="none" stroke="#C25B3A" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      .paper { fill: #F6F2E9; }
+      .card { fill: #FFFDF8; stroke: #2A2622; stroke-width: 1.05; }
+      .band1 { fill: #F4E3DC; stroke: #E7C6B8; stroke-width: 1; }
+      .band2 { fill: #F1ECE1; stroke: #D8D0C1; stroke-width: 1; }
+      .ink { fill: #2A2622; }
+      .muted { fill: #8A8175; }
+      .terra { fill: #C25B3A; }
+      .gray-line { fill: none; stroke: #8A8175; stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow-gray); }
+      .terra-line { fill: none; stroke: #C25B3A; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; marker-end: url(#arrow-terra); }
+      .dash { fill: #FFFDF8; stroke: #C25B3A; stroke-width: 1.1; stroke-dasharray: 5 4; }
+      text { letter-spacing: 0; }
+    </style>
   </defs>
-  <rect x="0" y="0" width="720" height="520" rx="10" fill="#F6F2E9"/>
-  <text x="360" y="26" text-anchor="middle" fill="#8A8175" font-size="13">사람별·채널별로 흩어진 소스</text>
-  <rect x="204" y="38" width="96" height="36" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.2"/><text x="252" y="61" text-anchor="middle" fill="#2A2622" font-size="15">일지</text>
-  <rect x="312" y="38" width="96" height="36" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.2"/><text x="360" y="61" text-anchor="middle" fill="#2A2622" font-size="15">git</text>
-  <rect x="420" y="38" width="96" height="36" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.2"/><text x="468" y="61" text-anchor="middle" fill="#2A2622" font-size="15">슬랙</text>
-  <line x1="360" y1="78" x2="360" y2="100" stroke="#8A8175" stroke-width="1.4" marker-end="url(#ag)"/>
-  <rect x="40" y="104" width="640" height="98" rx="12" fill="#F3E2DA" stroke="#E0B9A8" stroke-width="1"/>
-  <text x="58" y="128" fill="#C25B3A" font-size="13" font-weight="700" letter-spacing="0.4">STAGE 1 · 사람별 합성 (병렬)</text>
-  <rect x="58"  y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="110" y="169" text-anchor="middle" font-size="14" fill="#2A2622">쿠키</text>
-  <rect x="180" y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="232" y="169" text-anchor="middle" font-size="14" fill="#2A2622">키티</text>
-  <rect x="302" y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="354" y="169" text-anchor="middle" font-size="14" fill="#2A2622">조이</text>
-  <rect x="424" y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="476" y="169" text-anchor="middle" font-size="14" fill="#2A2622">차차</text>
-  <rect x="546" y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="598" y="169" text-anchor="middle" font-size="14" fill="#2A2622">호이</text>
-  <text x="662" y="197" text-anchor="end" fill="#8A8175" font-size="11.5">깊이 보존 · 압축 안 함</text>
-  <line x1="360" y1="202" x2="360" y2="224" stroke="#8A8175" stroke-width="1.4" marker-end="url(#ag)"/>
-  <g fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1">
-    <rect x="280" y="228" width="30" height="40" rx="3"/><rect x="322" y="228" width="30" height="40" rx="3"/><rect x="364" y="228" width="30" height="40" rx="3"/><rect x="406" y="228" width="30" height="40" rx="3"/>
+
+  <rect class="paper" x="0" y="0" width="720" height="760" rx="10"/>
+
+  <text class="muted" x="360" y="42" text-anchor="middle" font-size="13">사람별·채널별로 흩어진 소스</text>
+  <g font-size="15">
+    <rect class="card" x="168" y="60" width="104" height="38" rx="8"/>
+    <text class="ink" x="220" y="84" text-anchor="middle">일지</text>
+    <rect class="card" x="308" y="60" width="104" height="38" rx="8"/>
+    <text class="ink" x="360" y="84" text-anchor="middle">git</text>
+    <rect class="card" x="448" y="60" width="104" height="38" rx="8"/>
+    <text class="ink" x="500" y="84" text-anchor="middle">슬랙</text>
   </g>
-  <text x="360" y="286" text-anchor="middle" fill="#2A2622" font-size="13.5">개인 위클리 N장</text>
-  <text x="360" y="304" text-anchor="middle" fill="#8A8175" font-size="11.5">정해둔 공통 형식 (JSON)</text>
-  <rect x="24" y="336" width="124" height="52" rx="8" fill="#FFFDF8" stroke="#C25B3A" stroke-width="1.2" stroke-dasharray="4 3"/>
-  <text x="86" y="359" text-anchor="middle" fill="#2A2622" font-size="12.5">프로젝트 목록</text><text x="86" y="376" text-anchor="middle" fill="#8A8175" font-size="11">뼈대 · 자리 먼저</text>
-  <line x1="148" y1="362" x2="172" y2="362" stroke="#C25B3A" stroke-width="1.4" marker-end="url(#at)"/>
-  <line x1="360" y1="312" x2="360" y2="332" stroke="#8A8175" stroke-width="1.4" marker-end="url(#ag)"/>
-  <rect x="172" y="332" width="508" height="92" rx="12" fill="#EEE9DC" stroke="#CFC7B5" stroke-width="1"/>
-  <text x="190" y="356" fill="#C25B3A" font-size="13" font-weight="700" letter-spacing="0.4">STAGE 2 · 프로젝트별 (동시)</text>
-  <rect x="196" y="370" width="116" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="254" y="397" text-anchor="middle" font-size="14" fill="#2A2622">작성</text>
-  <line x1="314" y1="391" x2="348" y2="391" stroke="#C25B3A" stroke-width="1.4" marker-end="url(#at)"/>
-  <rect x="352" y="370" width="116" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="410" y="397" text-anchor="middle" font-size="14" fill="#2A2622">비평</text>
-  <line x1="470" y1="391" x2="504" y2="391" stroke="#C25B3A" stroke-width="1.4" marker-end="url(#at)"/>
-  <rect x="508" y="370" width="116" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="566" y="397" text-anchor="middle" font-size="14" fill="#2A2622">수정</text>
-  <line x1="426" y1="424" x2="426" y2="462" stroke="#8A8175" stroke-width="1.4" marker-end="url(#ag)"/>
-  <rect x="306" y="464" width="240" height="44" rx="8" fill="#C25B3A"/><text x="426" y="492" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700">파트 주간보고</text>
+
+  <path class="gray-line" d="M220 100 C220 118 274 124 322 132"/>
+  <path class="gray-line" d="M360 100 L360 132"/>
+  <path class="gray-line" d="M500 100 C500 118 446 124 398 132"/>
+
+  <rect class="band1" x="40" y="136" width="640" height="134" rx="10"/>
+  <text class="terra" x="64" y="164" font-size="13" font-weight="700">STAGE 1 · 사람별 합성 (병렬)</text>
+  <text class="muted" x="656" y="164" text-anchor="end" font-size="12">깊이 보존 · 압축 안 함</text>
+  <g font-size="14">
+    <rect class="card" x="64" y="188" width="96" height="44" rx="8"/>
+    <text class="ink" x="112" y="216" text-anchor="middle">쿠키</text>
+    <rect class="card" x="184" y="188" width="96" height="44" rx="8"/>
+    <text class="ink" x="232" y="216" text-anchor="middle">키티</text>
+    <rect class="card" x="304" y="188" width="96" height="44" rx="8"/>
+    <text class="ink" x="352" y="216" text-anchor="middle">조이</text>
+    <rect class="card" x="424" y="188" width="96" height="44" rx="8"/>
+    <text class="ink" x="472" y="216" text-anchor="middle">차차</text>
+    <rect class="card" x="544" y="188" width="96" height="44" rx="8"/>
+    <text class="ink" x="592" y="216" text-anchor="middle">호이</text>
+  </g>
+
+  <path class="gray-line" d="M360 272 L360 306"/>
+  <g stroke="#2A2622" stroke-width="1.05" fill="#FFFDF8" stroke-linejoin="round">
+    <path d="M258 312 h34 l12 12 v48 h-46 z"/>
+    <path d="M292 312 v12 h12"/>
+    <path d="M310 312 h34 l12 12 v48 h-46 z"/>
+    <path d="M344 312 v12 h12"/>
+    <path d="M362 312 h34 l12 12 v48 h-46 z"/>
+    <path d="M396 312 v12 h12"/>
+    <path d="M414 312 h34 l12 12 v48 h-46 z"/>
+    <path d="M448 312 v12 h12"/>
+  </g>
+  <text class="ink" x="360" y="404" text-anchor="middle" font-size="14">개인 위클리 N장</text>
+  <text class="muted" x="360" y="426" text-anchor="middle" font-size="12">정해둔 공통 형식 (JSON)</text>
+
+  <path class="gray-line" d="M360 438 L360 486"/>
+  <rect class="dash" x="40" y="484" width="160" height="74" rx="8"/>
+  <text class="ink" x="120" y="514" text-anchor="middle" font-size="13">프로젝트 목록 (뼈대)</text>
+  <text class="muted" x="120" y="536" text-anchor="middle" font-size="12">빠질 자리 없게 먼저</text>
+  <path class="terra-line" d="M202 522 C246 522 270 522 302 522"/>
+
+  <rect class="band2" x="302" y="486" width="378" height="134" rx="10"/>
+  <text class="terra" x="326" y="514" font-size="13" font-weight="700">STAGE 2 · 프로젝트별 (동시)</text>
+  <g font-size="14">
+    <rect class="card" x="326" y="544" width="84" height="44" rx="8"/>
+    <text class="ink" x="368" y="572" text-anchor="middle">작성</text>
+    <path class="terra-line" d="M414 566 L444 566"/>
+    <rect class="card" x="448" y="544" width="84" height="44" rx="8"/>
+    <text class="ink" x="490" y="572" text-anchor="middle">비평</text>
+    <path class="terra-line" d="M536 566 L566 566"/>
+    <rect class="card" x="570" y="544" width="84" height="44" rx="8"/>
+    <text class="ink" x="612" y="572" text-anchor="middle">수정</text>
+  </g>
+
+  <path class="gray-line" d="M491 622 L491 664"/>
+  <rect x="371" y="668" width="240" height="52" rx="8" fill="#C25B3A"/>
+  <text x="491" y="700" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700">파트 주간보고</text>
 </svg>
 
 에이전트 구성에서 결정한 게 셋이다.
