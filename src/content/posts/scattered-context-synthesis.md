@@ -55,23 +55,45 @@ tags: ["orchestration", "multi-source", "pipeline", "weekly-report", "architectu
 
 그래서 이걸 한 프롬프트가 아니라 **역할이 다른 AI 에이전트들의 조립**으로 만들었다. 전체 모양은 이렇다 — 핵심은 사람별로 한 번(나눔), 프로젝트별로 한 번(합침), **두 번 모양을 바꾼다**는 것.
 
-```
-   [소스]  일지 · git · 슬랙              ← 사람별/채널별로 흩어짐
-              │
-   ┌──────────────────────────────────────────────┐
-   │ Stage 1  사람별 합성 에이전트  ×5 (병렬)        │   깊이 보존만, 압축 금지
-   │   [쿠키] [키티] [조이] [차차] [호이] 동시에      │
-   └──────────────────────────────────────────────┘
-              ↓  개인 위클리 N장 (정해둔 공통 형식·파일)
-   공식 프로젝트 목록(뼈대) ─┐  ← 빠질 프로젝트 없게 자리를 먼저 깐다
-              ↓             │
-   ┌──────────────────────────────────────────────┐
-   │ Stage 2  프로젝트별 파이프라인 (프로젝트마다 동시) │
-   │   작성 → 비평(독립 '담당자 시뮬') → 수정         │   여기서만 공유용 추상화
-   └──────────────────────────────────────────────┘
-              ↓
-   Scrub (전역 정리) → 파트 주간보고
-```
+<svg viewBox="0 0 720 520" width="100%" style="max-width:720px;height:auto;display:block;margin:1.2rem auto" role="img" aria-label="아키텍처: 흩어진 소스 → 사람별 병렬 합성 → 개인 위클리 → 프로젝트 목록 뼈대 → 프로젝트별 작성·비평·수정 → 파트 주간보고" font-family="'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif">
+  <defs>
+    <marker id="ag" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#8A8175" stroke-width="1.4"/></marker>
+    <marker id="at" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#C25B3A" stroke-width="1.4"/></marker>
+  </defs>
+  <rect x="0" y="0" width="720" height="520" rx="10" fill="#F6F2E9"/>
+  <text x="360" y="26" text-anchor="middle" fill="#8A8175" font-size="13">사람별·채널별로 흩어진 소스</text>
+  <rect x="204" y="38" width="96" height="36" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.2"/><text x="252" y="61" text-anchor="middle" fill="#2A2622" font-size="15">일지</text>
+  <rect x="312" y="38" width="96" height="36" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.2"/><text x="360" y="61" text-anchor="middle" fill="#2A2622" font-size="15">git</text>
+  <rect x="420" y="38" width="96" height="36" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.2"/><text x="468" y="61" text-anchor="middle" fill="#2A2622" font-size="15">슬랙</text>
+  <line x1="360" y1="78" x2="360" y2="100" stroke="#8A8175" stroke-width="1.4" marker-end="url(#ag)"/>
+  <rect x="40" y="104" width="640" height="98" rx="12" fill="#F3E2DA" stroke="#E0B9A8" stroke-width="1"/>
+  <text x="58" y="128" fill="#C25B3A" font-size="13" font-weight="700" letter-spacing="0.4">STAGE 1 · 사람별 합성 (병렬)</text>
+  <rect x="58"  y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="110" y="169" text-anchor="middle" font-size="14" fill="#2A2622">쿠키</text>
+  <rect x="180" y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="232" y="169" text-anchor="middle" font-size="14" fill="#2A2622">키티</text>
+  <rect x="302" y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="354" y="169" text-anchor="middle" font-size="14" fill="#2A2622">조이</text>
+  <rect x="424" y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="476" y="169" text-anchor="middle" font-size="14" fill="#2A2622">차차</text>
+  <rect x="546" y="142" width="104" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="598" y="169" text-anchor="middle" font-size="14" fill="#2A2622">호이</text>
+  <text x="662" y="197" text-anchor="end" fill="#8A8175" font-size="11.5">깊이 보존 · 압축 안 함</text>
+  <line x1="360" y1="202" x2="360" y2="224" stroke="#8A8175" stroke-width="1.4" marker-end="url(#ag)"/>
+  <g fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1">
+    <rect x="280" y="228" width="30" height="40" rx="3"/><rect x="322" y="228" width="30" height="40" rx="3"/><rect x="364" y="228" width="30" height="40" rx="3"/><rect x="406" y="228" width="30" height="40" rx="3"/>
+  </g>
+  <text x="360" y="286" text-anchor="middle" fill="#2A2622" font-size="13.5">개인 위클리 N장</text>
+  <text x="360" y="304" text-anchor="middle" fill="#8A8175" font-size="11.5">정해둔 공통 형식 (JSON)</text>
+  <rect x="24" y="336" width="124" height="52" rx="8" fill="#FFFDF8" stroke="#C25B3A" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <text x="86" y="359" text-anchor="middle" fill="#2A2622" font-size="12.5">프로젝트 목록</text><text x="86" y="376" text-anchor="middle" fill="#8A8175" font-size="11">뼈대 · 자리 먼저</text>
+  <line x1="148" y1="362" x2="172" y2="362" stroke="#C25B3A" stroke-width="1.4" marker-end="url(#at)"/>
+  <line x1="360" y1="312" x2="360" y2="332" stroke="#8A8175" stroke-width="1.4" marker-end="url(#ag)"/>
+  <rect x="172" y="332" width="508" height="92" rx="12" fill="#EEE9DC" stroke="#CFC7B5" stroke-width="1"/>
+  <text x="190" y="356" fill="#C25B3A" font-size="13" font-weight="700" letter-spacing="0.4">STAGE 2 · 프로젝트별 (동시)</text>
+  <rect x="196" y="370" width="116" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="254" y="397" text-anchor="middle" font-size="14" fill="#2A2622">작성</text>
+  <line x1="314" y1="391" x2="348" y2="391" stroke="#C25B3A" stroke-width="1.4" marker-end="url(#at)"/>
+  <rect x="352" y="370" width="116" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="410" y="397" text-anchor="middle" font-size="14" fill="#2A2622">비평</text>
+  <line x1="470" y1="391" x2="504" y2="391" stroke="#C25B3A" stroke-width="1.4" marker-end="url(#at)"/>
+  <rect x="508" y="370" width="116" height="42" rx="8" fill="#FFFDF8" stroke="#2A2622" stroke-width="1.1"/><text x="566" y="397" text-anchor="middle" font-size="14" fill="#2A2622">수정</text>
+  <line x1="426" y1="424" x2="426" y2="462" stroke="#8A8175" stroke-width="1.4" marker-end="url(#ag)"/>
+  <rect x="306" y="464" width="240" height="44" rx="8" fill="#C25B3A"/><text x="426" y="492" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700">파트 주간보고</text>
+</svg>
 
 에이전트 구성에서 결정한 게 셋이다.
 
