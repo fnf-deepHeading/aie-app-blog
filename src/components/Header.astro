@@ -1,12 +1,15 @@
 ---
 import { SITE, NAV } from '../consts';
+import { withBase } from '../utils';
 const path = Astro.url.pathname;
-const isActive = (href: string) =>
-  href === '/' ? path === '/' : path.startsWith(href);
+const isActive = (href: string) => {
+  const full = withBase(href);
+  return href === '/' ? path === full : path.startsWith(full);
+};
 ---
 <header class="site-header">
   <div class="wrap bar">
-    <a href="/" class="brand" aria-label={`${SITE.title} 블로그 홈`}>
+    <a href={withBase('/')} class="brand" aria-label={`${SITE.title} 블로그 홈`}>
       <span class="brand-mark">{SITE.title}</span>
       <span class="brand-sub mono">tech&nbsp;blog</span>
     </a>
@@ -14,7 +17,7 @@ const isActive = (href: string) =>
       <ul>
         {NAV.map((item) => (
           <li>
-            <a href={item.href} class:list={['nav-link', { active: isActive(item.href) }]}>
+            <a href={withBase(item.href)} class:list={['nav-link', { active: isActive(item.href) }]}>
               {item.label}
             </a>
           </li>

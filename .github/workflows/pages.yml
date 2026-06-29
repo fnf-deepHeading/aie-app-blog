@@ -1,0 +1,50 @@
+name: Deploy to GitHub Pages
+
+# main 에 push 되면 정적 사이트를 빌드해 GitHub Pages 로 배포한다.
+# 리눅스 러너에서 도므로 macOS 전용 dcs-ai-cli 와 무관 — 진짜 자동배포.
+# 프로젝트 페이지라 base 는 '/aie-app-blog/' (GITHUB_PAGES=true 로 분기).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 진행 중 배포가 있으면 최신 것만 — 단, 실행 중인 건 끊지 않는다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 빌드
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAGES: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    name: 배포
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,5 +1,6 @@
 ---
 import { SITE } from '../consts';
+import { withBase } from '../utils';
 const year = new Date().getFullYear();
 ---
 <footer class="site-footer">
@@ -9,8 +10,8 @@ const year = new Date().getFullYear();
       <p class="ft-tag">{SITE.tagline}</p>
     </div>
     <div class="col links">
-      <a href="/rss.xml" class="mono">RSS</a>
-      <a href="/about" class="mono">소개</a>
+      <a href={withBase('/rss.xml')} class="mono">RSS</a>
+      <a href={withBase('/about')} class="mono">소개</a>
     </div>
     <p class="copy mono">© {year} AIE·App Part — F&amp;F</p>
   </div>

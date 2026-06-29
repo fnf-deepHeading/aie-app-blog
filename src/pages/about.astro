@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { SITE } from '../consts';
+import { withBase } from '../utils';
 
 const principles = [
   {
@@ -44,7 +45,7 @@ const principles = [
 
     <div class="about-foot">
       <p class="mono">함께 만들고 싶다면 — App Part, F&amp;F</p>
-      <a href="/" class="back mono">← 글 보러 가기</a>
+      <a href={withBase('/')} class="back mono">← 글 보러 가기</a>
     </div>
   </section>
 </Base>

@@ -2,7 +2,7 @@
 import { getCollection, render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
-import { readingTime } from '../../utils';
+import { readingTime, withBase } from '../../utils';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts', ({ data }) => !data.draft);
@@ -75,13 +75,13 @@ const mins = readingTime(post.body);
 
     <nav class="post-nav wrap" aria-label="다른 글">
       {prev ? (
-        <a href={`/posts/${prev.id}/`} class="nav-card prev">
+        <a href={withBase(`/posts/${prev.id}/`)} class="nav-card prev">
           <span class="mono dir">← 이전</span>
           <span class="nav-t">{prev.data.title}</span>
         </a>
       ) : <span />}
       {next ? (
-        <a href={`/posts/${next.id}/`} class="nav-card next">
+        <a href={withBase(`/posts/${next.id}/`)} class="nav-card next">
           <span class="mono dir">다음 →</span>
           <span class="nav-t">{next.data.title}</span>
         </a>
