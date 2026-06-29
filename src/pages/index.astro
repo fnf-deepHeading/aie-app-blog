@@ -2,12 +2,16 @@
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import PostCard from '../components/PostCard.astro';
+import featuredConfig from '../featured.json';
 
 const all = (await getCollection('posts', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
 
-const featured = all.find((p) => p.data.featured) ?? all[0];
+// 최상단 고정 글: /admin 이 관리하는 featured.json 의 slug 가 1순위,
+// 없으면 frontmatter featured, 그것도 없으면 최신 글.
+const pinned = featuredConfig.slug ? all.find((p) => p.id === featuredConfig.slug) : undefined;
+const featured = pinned ?? all.find((p) => p.data.featured) ?? all[0];
 // 최신 글을 맨 앞에 두고, 나머지는 시간 역순 그대로
 const ordered = featured ? [featured, ...all.filter((p) => p.id !== featured.id)] : all;
 const total = all.length;

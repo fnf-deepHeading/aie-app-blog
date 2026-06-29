@@ -15,7 +15,11 @@ export default defineConfig({
     ? 'https://fnf-deepheading.github.io'
     : 'https://aie-app-blog.apps.dcsai.fnf.co.kr',
   base: PAGES ? '/aie-app-blog' : '/',
-  integrations: [mdx(), sitemap()],
+  integrations: [
+    mdx(),
+    // /admin 은 관리자 전용 — 검색 색인/사이트맵에서 제외
+    sitemap({ filter: (page) => !/\/admin\/?$/.test(page) }),
+  ],
   markdown: {
     shikiConfig: {
       theme: 'github-light',

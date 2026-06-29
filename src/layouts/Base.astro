@@ -8,8 +8,9 @@ import { withBase } from '../utils';
 interface Props {
   title?: string;
   description?: string;
+  noindex?: boolean;
 }
-const { title, description = SITE.description } = Astro.props;
+const { title, description = SITE.description, noindex = false } = Astro.props;
 const pageTitle = title ? `${title} — ${SITE.title}` : `${SITE.title} — ${SITE.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
 ---
@@ -21,6 +22,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
     <link rel="icon" href={withBase('/favicon.svg')} type="image/svg+xml" />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="alternate" type="application/rss+xml" title={SITE.title} href={withBase('/rss.xml')} />
     <meta property="og:type" content="website" />
