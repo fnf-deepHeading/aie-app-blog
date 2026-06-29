@@ -165,4 +165,37 @@ h1, h2, h3, h4 { font-family: var(--serif); font-weight: 400; line-height: 1.12;
 .prose pre code { background: none; border: none; padding: 0; font-size: inherit; }
 .prose img { border-radius: var(--radius); border: 1px solid var(--line); margin-block: 0.5em; }
 .prose hr { border: none; border-top: 1px solid var(--line-2); margin-block: 2.5em; max-width: var(--measure-text); }
+
+/* tables — editorial: 모노 헤더 + 헤어라인 행 구분 + 넉넉한 셀 여백 */
+.prose table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  border-top: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+}
+.prose thead th {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: left;
+  vertical-align: bottom;
+  border-bottom: 1px solid var(--line-2);
+}
+.prose th, .prose td {
+  padding: 0.7em 1.4em;
+  text-align: left;
+  vertical-align: top;
+}
+.prose th:first-child, .prose td:first-child { padding-left: 0.2em; }
+.prose th:last-child, .prose td:last-child { padding-right: 0.2em; }
+.prose tbody tr + tr td { border-top: 1px solid var(--line); }
+.prose tbody td:first-child { color: var(--ink); font-weight: 500; }
 .prose h2 + p::first-letter { /* hook left intentionally subtle */ }
