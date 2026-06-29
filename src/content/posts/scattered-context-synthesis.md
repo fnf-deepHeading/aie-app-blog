@@ -77,9 +77,7 @@ tags: ["orchestration", "multi-source", "pipeline", "weekly-report", "architectu
       text { letter-spacing: 0; }
     </style>
   </defs>
-
   <rect class="paper" x="0" y="0" width="720" height="760" rx="10"/>
-
   <text class="muted" x="360" y="42" text-anchor="middle" font-size="13">사람별·채널별로 흩어진 소스</text>
   <g font-size="15">
     <rect class="card" x="168" y="60" width="104" height="38" rx="8"/>
@@ -89,11 +87,9 @@ tags: ["orchestration", "multi-source", "pipeline", "weekly-report", "architectu
     <rect class="card" x="448" y="60" width="104" height="38" rx="8"/>
     <text class="ink" x="500" y="84" text-anchor="middle">슬랙</text>
   </g>
-
   <path class="gray-line" d="M220 100 C220 118 274 124 322 132"/>
   <path class="gray-line" d="M360 100 L360 132"/>
   <path class="gray-line" d="M500 100 C500 118 446 124 398 132"/>
-
   <rect class="band1" x="40" y="136" width="640" height="134" rx="10"/>
   <text class="terra" x="64" y="164" font-size="13" font-weight="700">STAGE 1 · 사람별 합성 (병렬)</text>
   <text class="muted" x="656" y="164" text-anchor="end" font-size="12">깊이 보존 · 압축 안 함</text>
@@ -109,7 +105,6 @@ tags: ["orchestration", "multi-source", "pipeline", "weekly-report", "architectu
     <rect class="card" x="544" y="188" width="96" height="44" rx="8"/>
     <text class="ink" x="592" y="216" text-anchor="middle">호이</text>
   </g>
-
   <path class="gray-line" d="M360 272 L360 306"/>
   <g stroke="#2A2622" stroke-width="1.05" fill="#FFFDF8" stroke-linejoin="round">
     <path d="M258 312 h34 l12 12 v48 h-46 z"/>
@@ -123,13 +118,11 @@ tags: ["orchestration", "multi-source", "pipeline", "weekly-report", "architectu
   </g>
   <text class="ink" x="360" y="404" text-anchor="middle" font-size="14">개인 위클리 N장</text>
   <text class="muted" x="360" y="426" text-anchor="middle" font-size="12">정해둔 공통 형식 (JSON)</text>
-
   <path class="gray-line" d="M360 438 L360 486"/>
   <rect class="dash" x="40" y="484" width="160" height="74" rx="8"/>
   <text class="ink" x="120" y="514" text-anchor="middle" font-size="13">프로젝트 목록 (뼈대)</text>
   <text class="muted" x="120" y="536" text-anchor="middle" font-size="12">빠질 자리 없게 먼저</text>
   <path class="terra-line" d="M202 522 C246 522 270 522 302 522"/>
-
   <rect class="band2" x="302" y="486" width="378" height="134" rx="10"/>
   <text class="terra" x="326" y="514" font-size="13" font-weight="700">STAGE 2 · 프로젝트별 (동시)</text>
   <g font-size="14">
@@ -142,7 +135,6 @@ tags: ["orchestration", "multi-source", "pipeline", "weekly-report", "architectu
     <rect class="card" x="570" y="544" width="84" height="44" rx="8"/>
     <text class="ink" x="612" y="572" text-anchor="middle">수정</text>
   </g>
-
   <path class="gray-line" d="M491 622 L491 664"/>
   <rect x="371" y="668" width="240" height="52" rx="8" fill="#C25B3A"/>
   <text x="491" y="700" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="700">파트 주간보고</text>
