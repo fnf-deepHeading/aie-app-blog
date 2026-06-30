@@ -142,14 +142,14 @@ const categories = [...counts.entries()].sort((a, b) => b[1] - a[1]);
   .hero-title em { font-style: normal; color: var(--clay); }
   .hero-lead {
     margin-top: 1.6rem;
-    max-width: 38rem;
-    font-size: var(--fs-md);
-    line-height: 1.6;
+    max-width: 40rem;
+    font-size: 1rem;
+    line-height: 1.65;
     color: var(--ink-2);
   }
-  /* 문장 단위로 줄바꿈 — 각 문장이 제 줄에서 시작, 문장 내 줄바꿈은 균형 있게(외톨이 단어 방지) */
+  /* 문장 단위로 줄바꿈 — 폭이 되면 문장당 한 줄, 좁으면 균형 있게 접힘 */
   .hero-lead span { display: block; text-wrap: balance; }
-  .hero-lead span + span { margin-top: 0.45em; }
+  .hero-lead span + span { margin-top: 0.5em; }
 
   /* ── Board: 사이드바 + 메인 ─────────────────────────── */
   .board {
