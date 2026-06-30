@@ -10,18 +10,18 @@
 
 /* --- Tokens ------------------------------------------------ */
 :root {
-  /* color — warm ivory paper */
-  --paper:      #FAF9F4;   /* base background */
-  --paper-2:    #F1EDE2;   /* sunk panels, cards */
-  --paper-3:    #E9E4D6;   /* deeper wash */
-  --ink:        #1C1B17;   /* primary text */
-  --ink-2:      #57534A;   /* meta / secondary */
-  --ink-3:      #908A7C;   /* faint */
-  --clay:       #C25B3A;   /* accent — terracotta */
-  --clay-2:     #A2452A;   /* accent hover/deep */
-  --clay-wash:  #F3E2DA;   /* accent tint bg */
-  --line:       #E1DBCB;   /* hairline */
-  --line-2:     #D2CBB7;   /* stronger hairline */
+  /* color — clean off-white + violet point */
+  --paper:      #FAFAFA;   /* base background — off-white */
+  --paper-2:    #FFFFFF;   /* raised cards/panels — white */
+  --paper-3:    #F0EEF6;   /* deeper wash (faint violet-gray) */
+  --ink:        #211E29;   /* primary text — cool near-black */
+  --ink-2:      #585563;   /* meta / secondary */
+  --ink-3:      #918DA0;   /* faint */
+  --clay:       #B090F0;   /* accent — violet (point, from mascot) */
+  --clay-2:     #7A57D1;   /* accent deep — legible on white (links/text) */
+  --clay-wash:  #F1ECFB;   /* accent tint bg */
+  --line:       #E7E5EE;   /* hairline (cool) */
+  --line-2:     #D7D3E2;   /* stronger hairline */
 
   /* type */
   --serif: 'Newsreader', 'Gowun Batang', Georgia, serif;
@@ -29,14 +29,14 @@
   --mono:  'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
   /* type scale (1.25 major third on a 18px base) */
-  --fs-xs:   0.75rem;   /* 12 — mono meta */
-  --fs-sm:   0.875rem;  /* 14 */
-  --fs-base: 1.125rem;  /* 18 — body */
-  --fs-md:   1.375rem;  /* 22 */
-  --fs-lg:   1.75rem;   /* 28 */
-  --fs-xl:   2.25rem;   /* 36 */
-  --fs-2xl:  3.25rem;   /* 52 */
-  --fs-3xl:  4.5rem;    /* 72 — hero */
+  --fs-xs:   0.72rem;   /* ~11.5 — mono meta */
+  --fs-sm:   0.82rem;   /* ~13 */
+  --fs-base: 1.0625rem; /* 17 — body (전반 축소) */
+  --fs-md:   1.3rem;    /* ~21 */
+  --fs-lg:   1.62rem;   /* ~26 */
+  --fs-xl:   2.1rem;    /* ~34 */
+  --fs-2xl:  3.0rem;    /* ~48 */
+  --fs-3xl:  4.1rem;    /* ~66 — hero */
 
   /* layout */
   --measure: 96rem;     /* page max — 넓은 에디토리얼 컨테이너 */
@@ -77,7 +77,7 @@ img, svg, video { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-decoration: none; }
 ul, ol { padding: 0; list-style: none; }
 
-::selection { background: var(--clay); color: var(--paper); }
+::selection { background: var(--clay); color: var(--ink); }
 
 :focus-visible {
   outline: 2px solid var(--clay);
@@ -119,7 +119,7 @@ ul, ol { padding: 0; list-style: none; }
 h1, h2, h3, h4 { font-family: var(--serif); font-weight: 400; line-height: 1.12; letter-spacing: -0.01em; }
 
 /* --- Prose (article body) ---------------------------------- */
-.prose { font-size: var(--fs-base); line-height: 1.78; color: #2A2822; }
+.prose { font-size: var(--fs-base); line-height: 1.78; color: var(--ink); }
 .prose > * + * { margin-top: 1.35em; }
 .prose h2 { font-size: var(--fs-xl); margin-top: 2.4em; margin-bottom: 0.1em; line-height: 1.18; }
 .prose h3 { font-size: var(--fs-lg); margin-top: 1.8em; line-height: 1.25; }
