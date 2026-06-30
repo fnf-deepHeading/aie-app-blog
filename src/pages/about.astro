@@ -17,6 +17,15 @@ const principles = [
     v: '잘된 사례만 모으면 광고가 된다. 되돌린 결정, 틀린 가정, 새벽에 잡은 장애도 똑같이 기록한다.',
   },
 ];
+
+// 팀원(닉네임) + 한 줄. ※ 초안 — 각자 한 줄은 본인이 다듬을 것.
+const team = [
+  { name: '쿠키', line: '흩어진 업무 맥락을 묶는 주간보고 파이프라인·멀티에이전트 오케스트레이션.' },
+  { name: '조이', line: '로그로 스스로 절차를 고치는 운영 에이전트(zoee.alter, FAPO).' },
+  { name: '키티', line: '업무 일지·운영 업무를 자동화하는 개인 에이전트(kitty.alter).' },
+  { name: '호이', line: 'AI 도구 설정을 한눈에 보는 관측 도구·AI Native 작업 환경(hoy.alter).' },
+  { name: '차차', line: '(소개 준비 중)' },
+];
 ---
 <Base title="소개" description="AIE·App 파트가 이 블로그를 쓰는 이유.">
   <section class="about wrap">
@@ -42,6 +51,19 @@ const principles = [
         </li>
       ))}
     </ul>
+
+    <section class="team" aria-label="팀원">
+      <h2 class="team-h">팀</h2>
+      <p class="team-sub">{SITE.title} 파트 — 5명이 14개 활성 프로젝트에 걸쳐 일합니다.</p>
+      <ul class="members">
+        {team.map((m) => (
+          <li class="member">
+            <span class="m-name">{m.name}</span>
+            <span class="m-line">{m.line}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
 
     <div class="about-foot">
       <p class="mono">함께 만들고 싶다면 — App Part, F&amp;F</p>
@@ -77,6 +99,32 @@ const principles = [
   .p-idx { color: var(--clay); padding-top: 0.35rem; font-weight: 500; }
   .p-k { font-size: var(--fs-lg); line-height: 1.2; }
   .p-v { margin-top: 0.5rem; color: var(--ink-2); max-width: 40rem; line-height: 1.6; }
+  .team { margin-top: 3.5rem; }
+  .team-h { font-size: var(--fs-lg); }
+  .team-sub { margin-top: 0.4rem; color: var(--ink-3); font-size: var(--fs-sm); }
+  .members {
+    margin-top: 1.5rem;
+    border-top: 2px solid var(--ink);
+  }
+  .member {
+    display: flex;
+    gap: 1.2rem;
+    align-items: baseline;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .m-name {
+    flex: 0 0 4.5rem;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .m-line { color: var(--ink-2); font-size: var(--fs-sm); line-height: 1.55; max-width: 40rem; }
+  @media (max-width: 560px) {
+    .member { flex-direction: column; gap: 0.25rem; }
+    .m-name { flex: none; }
+  }
+
   .about-foot {
     display: flex;
     justify-content: space-between;
