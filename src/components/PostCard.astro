@@ -9,7 +9,7 @@ interface Props {
   featured?: boolean;
 }
 const { post, index, featured = false } = Astro.props;
-const { title, description, category, pubDate, tags } = post.data;
+const { title, description, category, pubDate, author, tags } = post.data;
 const mins = readingTime(post.body);
 const num = index !== undefined ? String(index).padStart(2, '0') : null;
 const t = splitTitle(title);
@@ -24,6 +24,8 @@ const t = splitTitle(title);
     <h3 class="card-title">{t.main}{t.sub && <span class="card-subtitle">{t.sub}</span>}</h3>
     <p class="card-desc">{description}</p>
     <div class="card-meta">
+      <span class="card-author mono">{author}</span>
+      <span class="dot" aria-hidden="true">·</span>
       <FormattedDate date={pubDate} />
       <span class="dot" aria-hidden="true">·</span>
       <span class="mono">{mins}분</span>
@@ -65,6 +67,7 @@ const t = splitTitle(title);
   .card-desc { margin-top: 0.5rem; color: var(--ink-2); font-size: 0.95rem; line-height: 1.55; }
   .card-meta { display: flex; align-items: center; gap: 0.55rem; margin-top: 1rem; flex-wrap: wrap; }
   .dot { color: var(--ink-3); }
+  .card-author { color: var(--clay-2); font-weight: 500; }
   .tags { display: inline-flex; gap: 0.55rem; margin-left: 0.4rem; }
   .tag { color: var(--ink-3); }
 
