@@ -10,6 +10,7 @@ const isActive = (href: string) => {
 <header class="site-header">
   <div class="wrap bar">
     <a href={withBase('/')} class="brand" aria-label={`${SITE.title} 블로그 홈`}>
+      <img class="brand-logo" src={withBase('/fli.png')} alt="" width="32" height="32" />
       <span class="brand-mark">{SITE.title}</span>
       <span class="brand-sub mono"><span class="brand-org">F&amp;F</span> · tech&nbsp;blog</span>
     </a>
@@ -44,9 +45,15 @@ const isActive = (href: string) => {
   }
   .brand {
     display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
+    align-items: center;
+    gap: 0.5rem;
   }
+  .brand-logo {
+    width: 32px; height: 32px;
+    flex: 0 0 auto;
+    transition: transform .25s var(--ease);
+  }
+  .brand:hover .brand-logo { transform: rotate(-6deg) scale(1.05); }
   .brand-mark {
     font-family: var(--sans);
     font-size: 1.5rem;
