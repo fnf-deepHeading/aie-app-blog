@@ -50,9 +50,9 @@ const num = index !== undefined ? String(index).padStart(2, '0') : null;
     border-radius: 999px;
     letter-spacing: 0.1em;
   }
-  .card-title { font-size: var(--fs-lg); line-height: 1.2; transition: color .2s var(--ease); }
+  .card-title { font-size: var(--fs-md); line-height: 1.25; transition: color .2s var(--ease); }
   .card-link:hover .card-title { color: var(--clay-2); }
-  .card-desc { margin-top: 0.5rem; color: var(--ink-2); font-size: var(--fs-base); line-height: 1.55; }
+  .card-desc { margin-top: 0.5rem; color: var(--ink-2); font-size: 0.95rem; line-height: 1.55; }
   .card-meta { display: flex; align-items: center; gap: 0.55rem; margin-top: 1rem; flex-wrap: wrap; }
   .dot { color: var(--ink-3); }
   .tags { display: inline-flex; gap: 0.55rem; margin-left: 0.4rem; }
@@ -63,7 +63,7 @@ const num = index !== undefined ? String(index).padStart(2, '0') : null;
   :global(.posts.is-list) .card:hover { border-color: var(--clay); }
   :global(.posts.is-list) .card-link { display: block; padding: 1.6rem 0 1.8rem; }
   :global(.posts.is-list) .card-desc { max-width: 42rem; }
-  :global(.posts.is-list) .card.is-featured .card-title { font-size: var(--fs-xl); }
+  :global(.posts.is-list) .card.is-featured .card-title { font-size: var(--fs-lg); }
 
   /* ── 그리드 뷰 (조상 .posts.is-grid) ──────────────── */
   :global(.posts.is-grid) .idx { display: none; } /* 번호는 아카이브(리스트) 어포던스 */
@@ -86,9 +86,9 @@ const num = index !== undefined ? String(index).padStart(2, '0') : null;
   :global(.posts.is-grid) .card.is-featured { grid-column: 1 / -1; background: var(--paper-2); }
   :global(.posts.is-grid) .card.is-featured .card-link { padding: clamp(1.6rem, 4vw, 2.6rem); }
   :global(.posts.is-grid) .card.is-featured .card-title {
-    font-size: clamp(1.9rem, 4vw, var(--fs-2xl));
-    max-width: 18ch;
+    font-size: clamp(1.7rem, 3.2vw, 2.1rem);
+    max-width: 30ch;
     margin-top: 0.3rem;
   }
-  :global(.posts.is-grid) .card.is-featured .card-desc { font-size: var(--fs-md); max-width: 44rem; }
+  :global(.posts.is-grid) .card.is-featured .card-desc { font-size: var(--fs-base); max-width: 62rem; }
 </style>
