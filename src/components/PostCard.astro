@@ -14,7 +14,7 @@ const mins = readingTime(post.body);
 const num = index !== undefined ? String(index).padStart(2, '0') : null;
 const t = splitTitle(title);
 ---
-<article class:list={['card', { 'is-featured': featured }]} data-category={category}>
+<article class:list={['card', { 'is-featured': featured }]} data-category={category} data-tags={tags.join(',')}>
   <a href={withBase(`/posts/${post.id}/`)} class="card-link" aria-label={title}>
     <div class="card-top">
       {num && <span class="idx mono" aria-hidden="true">{num}</span>}
