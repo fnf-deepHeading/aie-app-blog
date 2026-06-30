@@ -1,7 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import FormattedDate from './FormattedDate.astro';
-import { readingTime, withBase } from '../utils';
+import { readingTime, withBase, splitTitle } from '../utils';
 
 interface Props {
   post: CollectionEntry<'posts'>;
@@ -12,6 +12,7 @@ const { post, index, featured = false } = Astro.props;
 const { title, description, category, pubDate, tags } = post.data;
 const mins = readingTime(post.body);
 const num = index !== undefined ? String(index).padStart(2, '0') : null;
+const t = splitTitle(title);
 ---
 <article class:list={['card', { 'is-featured': featured }]} data-category={category}>
   <a href={withBase(`/posts/${post.id}/`)} class="card-link" aria-label={title}>
@@ -20,7 +21,7 @@ const num = index !== undefined ? String(index).padStart(2, '0') : null;
       <span class="eyebrow">{category}</span>
       {featured && <span class="latest mono">최신</span>}
     </div>
-    <h3 class="card-title">{title}</h3>
+    <h3 class="card-title">{t.main}{t.sub && <span class="card-subtitle">{t.sub}</span>}</h3>
     <p class="card-desc">{description}</p>
     <div class="card-meta">
       <FormattedDate date={pubDate} />
@@ -50,8 +51,18 @@ const num = index !== undefined ? String(index).padStart(2, '0') : null;
     border-radius: 999px;
     letter-spacing: 0.1em;
   }
-  .card-title { font-size: var(--fs-md); line-height: 1.25; transition: color .2s var(--ease); }
+  .card-title { font-size: var(--fs-md); line-height: 1.25; transition: color .2s var(--ease); text-wrap: balance; }
   .card-link:hover .card-title { color: var(--clay-2); }
+  /* 제목의 " — " 뒤 부제는 다음 줄에 작게·연하게 */
+  .card-subtitle {
+    display: block;
+    margin-top: 0.2em;
+    font-size: 0.82em;
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--ink-2);
+  }
+  .card-subtitle::before { content: '— '; color: var(--clay); }
   .card-desc { margin-top: 0.5rem; color: var(--ink-2); font-size: 0.95rem; line-height: 1.55; }
   .card-meta { display: flex; align-items: center; gap: 0.55rem; margin-top: 1rem; flex-wrap: wrap; }
   .dot { color: var(--ink-3); }

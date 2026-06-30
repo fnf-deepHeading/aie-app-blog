@@ -8,6 +8,18 @@ export function withBase(path: string): string {
   return base + (path.startsWith('/') ? path : '/' + path);
 }
 
+/**
+ * 제목을 " — "(엠대시) 기준으로 메인/부제로 나눈다 (표시용).
+ * frontmatter의 title 전체 문자열은 그대로 두고(메타·SEO용), 화면에선 두 줄로.
+ * 구분자가 없으면 sub=null.
+ */
+export function splitTitle(title: string): { main: string; sub: string | null } {
+  const sep = ' — ';
+  const i = title.indexOf(sep);
+  if (i === -1) return { main: title, sub: null };
+  return { main: title.slice(0, i), sub: title.slice(i + sep.length) };
+}
+
 /** 한글/영문 혼용 본문의 대략적 읽는 시간(분). */
 export function readingTime(body: string | undefined): number {
   if (!body) return 1;
