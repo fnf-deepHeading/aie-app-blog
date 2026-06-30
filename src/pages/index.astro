@@ -25,6 +25,13 @@ const categories = [...counts.entries()].sort((a, b) => b[1] - a[1]);
 const tagCounts = new Map<string, number>();
 for (const p of all) for (const t of p.data.tags ?? []) tagCounts.set(t, (tagCounts.get(t) ?? 0) + 1);
 const tags = [...tagCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+// 태그 정책: 넓은 카테고리형으로 전체 15개 이내 유지 (README '작성 규칙 6').
+if (tags.length > 15) {
+  console.warn(
+    `\n⚠️  [태그 정책] 고유 태그가 ${tags.length}개입니다(권장 ≤15). 비슷한 태그를 통합하세요:\n   ${tags.map(([t]) => t).join(', ')}\n`
+  );
+}
 ---
 <Base>
   <!-- Hero: thesis statement -->

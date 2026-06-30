@@ -43,6 +43,7 @@ AIE·App 파트의 팀 기술 블로그. Astro 기반 정적 사이트.
 - **제목 메인/부제 분리**: title에 `' — '`(공백+엠대시 U+2014+공백)가 있으면 그 뒤가 부제로 분리돼 카드·상세에서 다음 줄에 작게 렌더(`splitTitle()` in `src/utils.ts`). 메타·OG엔 전체 title 사용. 일반 하이픈 `-`나 공백 없는 `—`는 분리 안 됨 — 새 제목 쓸 때 이 컨벤션 유지.
 - **이미지**: git에 커밋 금지, `npm run upload:image`로 S3 업로드 후 URL 사용(본문 이미지는 클릭 시 자동 라이트박스).
 - **mermaid**: ` ```mermaid ` 코드블록은 SVG 다이어그램으로 자동 렌더(바이올렛 테마).
+- **태그**: 넓은 카테고리형 Title Case로, **전체 고유 태그 15개 이내** 유지(홈 우측 필터). 새 글은 기존 태그 우선 재사용, 정말 새 분류만 추가. 현재 어휘: `Agents`·`Architecture`·`Automation`·`Ops`·`AI Native`·`Tooling`. (15개 초과 시 빌드 경고 — `index.astro`.)
 
 ## 최상단 고정 글 (featured)
 홈 최상단 고정 글의 **단일 진실원천 = `src/featured.json`** (`{"slug": "..."}`). `index.astro`가 이 slug를 1순위로 읽고, 없으면 frontmatter `featured: true`, 그것도 없으면 최신 글 순으로 폴백.
