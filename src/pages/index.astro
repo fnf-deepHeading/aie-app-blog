@@ -147,8 +147,8 @@ const categories = [...counts.entries()].sort((a, b) => b[1] - a[1]);
     line-height: 1.6;
     color: var(--ink-2);
   }
-  /* 문장 단위로 줄바꿈 — 각 문장이 제 줄에서 시작, 내부 줄바꿈은 균형 있게 */
-  .hero-lead span { display: block; text-wrap: pretty; }
+  /* 문장 단위로 줄바꿈 — 각 문장이 제 줄에서 시작, 문장 내 줄바꿈은 균형 있게(외톨이 단어 방지) */
+  .hero-lead span { display: block; text-wrap: balance; }
   .hero-lead span + span { margin-top: 0.45em; }
 
   /* ── Board: 사이드바 + 메인 ─────────────────────────── */
