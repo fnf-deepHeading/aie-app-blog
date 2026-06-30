@@ -246,6 +246,36 @@ const mins = readingTime(post.body);
     .post-nav { grid-template-columns: 1fr; }
     .nav-card.next { text-align: left; align-items: flex-start; }
   }
+
+  /* 본문 이미지: 클릭하면 확대 */
+  .prose :global(img) { cursor: zoom-in; }
+
+  /* mermaid 다이어그램 */
+  :global(.mermaid-fig) { margin: 1.8em 0; text-align: center; overflow-x: auto; }
+  :global(.mermaid-fig svg) { max-width: 100%; height: auto; }
+
+  /* 이미지 확대 라이트박스 (body에 동적 삽입 → :global) */
+  :global(.lightbox) {
+    position: fixed; inset: 0; z-index: 200;
+    display: none; align-items: center; justify-content: center;
+    padding: 4vmin; cursor: zoom-out;
+    background: color-mix(in srgb, var(--ink) 84%, transparent);
+    -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  }
+  :global(.lightbox.open) { display: flex; }
+  :global(.lightbox img) {
+    max-width: 100%; max-height: 100%;
+    border-radius: var(--radius);
+    border: 1px solid var(--line-2);
+    box-shadow: 0 24px 60px rgba(28, 27, 23, 0.45);
+  }
+  :global(.lightbox .lb-close) {
+    position: absolute; top: 1.1rem; right: 1.3rem;
+    font-family: var(--mono); font-size: var(--fs-xs); letter-spacing: 0.08em;
+    color: var(--paper); background: none; cursor: pointer;
+    border: 1px solid color-mix(in srgb, var(--paper) 45%, transparent);
+    border-radius: var(--radius); padding: 0.4rem 0.7rem;
+  }
 </style>
 
 <script>
@@ -284,5 +314,64 @@ const mins = readingTime(post.body);
     );
 
     headings.forEach((h) => h.id && observer.observe(h));
+  }
+</script>
+
+<script>
+  // 본문 이미지 클릭 → 라이트박스 확대 (Esc·배경 클릭으로 닫기)
+  const imgs = document.querySelectorAll<HTMLImageElement>('.prose img');
+  if (imgs.length) {
+    let overlay: HTMLElement | null = null;
+    const close = () => {
+      overlay?.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+    const open = (src: string, alt: string) => {
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'lightbox';
+        overlay.innerHTML =
+          '<button class="lb-close" type="button" aria-label="닫기">ESC ✕</button><img alt="">';
+        overlay.addEventListener('click', close);
+        document.body.appendChild(overlay);
+      }
+      const big = overlay.querySelector('img') as HTMLImageElement;
+      big.src = src;
+      big.alt = alt;
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+    imgs.forEach((img) => {
+      img.addEventListener('click', () => open(img.currentSrc || img.src, img.alt));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') close();
+    });
+  }
+
+  // mermaid 코드블록 → 실제 다이어그램 (있을 때만 mermaid 동적 로드)
+  const mmd = document.querySelectorAll<HTMLElement>('pre[data-language="mermaid"]');
+  if (mmd.length) {
+    const { default: mermaid } = await import('mermaid');
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'neutral',
+      securityLevel: 'loose',
+      fontFamily: 'inherit',
+    });
+    let i = 0;
+    for (const pre of mmd) {
+      const code = (pre.textContent || '').trim();
+      if (!code) continue;
+      try {
+        const { svg } = await mermaid.render('mmd-' + i++, code);
+        const fig = document.createElement('figure');
+        fig.className = 'mermaid-fig';
+        fig.innerHTML = svg;
+        pre.replaceWith(fig);
+      } catch {
+        /* 렌더 실패 시 원본 코드블록 유지 */
+      }
+    }
   }
 </script>

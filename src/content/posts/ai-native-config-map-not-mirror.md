@@ -160,23 +160,31 @@ tags: ["agents", "ai-native", "config-management", "observability", "tooling"]
 
 이 워크플로의 흐름은 이렇다 — map-not-mirror 원칙이 그대로 실행에 옮겨진 모습이다:
 
-```text
-Hermes cron (매일 18:00)
-   │
-   ▼
-cron 에이전트 (LLM)
-   │ ① get_recent_memories 호출
-   ▼
-workflow-manager MCP ──② 위치 조회──▶ 매니페스트 SSOT (config-map.json)
-   │ ③ 스캔
-   ├─▶ Claude Code  ~/.claude/projects/*/memory (전 프로젝트)
-   ├─▶ Codex        ~/.codex/memories
-   └─▶ Hermes       (로컬 메모리 경로)
-        └ 제외: AGENTS.md·CLAUDE.md·SOUL.md·인덱스 등 (entity=memory만)
-   │ ④ 노트 메타 목록 → 에이전트
-   │ ⑤ 본문 필요시 read_doc (.md만)
-   ▼
-⑥ 한국어 요약 → ⑦ Slack 전송
+```mermaid
+flowchart TD
+    Cron["Hermes cron<br/>매일 18:00"] --> Agent["cron 에이전트 (LLM)"]
+    subgraph MCP["workflow-manager MCP"]
+        GRM["get_recent_memories<br/>오늘 추가·갱신 노트"]
+        RD["read_doc<br/>노트 본문 (.md만)"]
+    end
+    Map["매니페스트 SSOT<br/>config-map.json"]
+    subgraph Stores["auto_memory 저장소"]
+        C["Claude Code<br/>~/.claude/projects/*/memory"]
+        X["Codex<br/>~/.codex/memories"]
+        H["Hermes<br/>로컬 메모리"]
+    end
+    Excl["제외 (entity=memory)<br/>AGENTS·CLAUDE·SOUL·인덱스"]
+    Agent -->|① 호출| GRM
+    GRM -->|② 위치 조회| Map
+    GRM -->|③ 스캔| C
+    GRM -->|③ 스캔| X
+    GRM -->|③ 스캔| H
+    GRM -.->|필터로 배제| Excl
+    GRM -->|④ 노트 메타 목록| Agent
+    Agent -->|⑤ 본문 필요시| RD
+    RD --> Agent
+    Agent -->|⑥ 한국어 요약| Report["보고서"]
+    Report -->|⑦ Slack 전송| Slack["Slack (호이-알터 채널)"]
 ```
 
 남은 건 둘이다. 만든 MCP 서버를 Claude Code·Codex에 실제로 등록해 대화로 검증하는 일(headless 스모크 테스트는 통과), 그리고 위 가설(세션을 분석해 프롬프트·스킬을 깎는 재귀 루프)을 실제 업무에 돌려보는 일. 다음 주의 출발점이다.
