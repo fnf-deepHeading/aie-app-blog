@@ -367,6 +367,20 @@ const t = splitTitle(title);
   // mermaid 코드블록 → 실제 다이어그램 (있을 때만 mermaid 동적 로드)
   const mmd = document.querySelectorAll<HTMLElement>('pre[data-language="mermaid"]');
   if (mmd.length) {
+    const FLI = import.meta.env.BASE_URL + 'fli.png';
+    // 렌더 전에 코드블록을 Fli 로더로 교체 — 원본 mermaid 텍스트 깜빡임 방지 + 로딩 표시
+    const jobs = ([...mmd]
+      .map((pre) => {
+        const code = (pre.textContent || '').trim();
+        if (!code) return null;
+        const loader = document.createElement('div');
+        loader.className = 'fli-loader mermaid-fig';
+        loader.innerHTML = `<img src="${FLI}" alt="" width="52" height="52" /><span>다이어그램 그리는 중</span>`;
+        pre.replaceWith(loader);
+        return { code, loader };
+      })
+      .filter(Boolean)) as { code: string; loader: HTMLElement }[];
+
     const { default: mermaid } = await import('mermaid');
     mermaid.initialize({
       startOnLoad: false,
@@ -388,17 +402,15 @@ const t = splitTitle(title);
       },
     });
     let i = 0;
-    for (const pre of mmd) {
-      const code = (pre.textContent || '').trim();
-      if (!code) continue;
+    for (const { code, loader } of jobs) {
       try {
         const { svg } = await mermaid.render('mmd-' + i++, code);
         const fig = document.createElement('figure');
         fig.className = 'mermaid-fig';
         fig.innerHTML = svg;
-        pre.replaceWith(fig);
+        loader.replaceWith(fig);
       } catch {
-        /* 렌더 실패 시 원본 코드블록 유지 */
+        loader.remove(); /* 렌더 실패 시 로더 제거 */
       }
     }
   }

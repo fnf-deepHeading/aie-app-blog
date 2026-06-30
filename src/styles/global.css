@@ -199,3 +199,29 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 600; line-height: 1.2; l
 .prose tbody tr + tr td { border-top: 1px solid var(--line); }
 .prose tbody td:first-child { color: var(--ink); font-weight: 500; }
 .prose h2 + p::first-letter { /* hook left intentionally subtle */ }
+
+/* --- Fli 로딩 인디케이터 ------------------------------------ */
+/* dcs-ai 마스코트(Fli)를 가볍게 CSS 애니메이션 — 통통 튀는 로딩.
+   (원본 Lottie는 gzip 1.5MB라 부적합 → 이미 로드된 PNG 재사용) */
+.fli-loader {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.fli-loader img {
+  width: 52px;
+  height: 52px;
+  animation: fli-bounce 1.05s var(--ease) infinite;
+  filter: drop-shadow(0 7px 9px color-mix(in srgb, var(--clay) 30%, transparent));
+}
+@keyframes fli-bounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50%      { transform: translateY(-11px) scale(1.03, 0.97); }
+}
+@media (prefers-reduced-motion: reduce) { .fli-loader img { animation: none; } }
