@@ -4,7 +4,7 @@ description: "업무 자동화를 만들고 운영하는 '상위 계층'을 한 
 category: "Agents"
 pubDate: 2026-06-27
 author: "호이"
-tags: ["agents", "ai-native", "config-management", "observability", "tooling"]
+tags: ["Agents", "AI Native", "Tooling"]
 ---
 
 이번 주 집중 주제는 **AI 업무 환경 만들기**였다. Claude Code·Codex·MCP·개인 에이전트 Hermes(이하 알터)를 *쓰고는* 있었지만, 업무 흐름 자체는 여전히 수작업이었다 — 업무 읽기, 맥락 정리, 프롬프트 투입, 결과 확인을 매번 직접. 목표는 개별 업무를 하나씩 자동화하는 게 아니라, **업무 자동화를 만들고 운영하는 상위 계층**을 세우는 것이었다.

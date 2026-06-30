@@ -4,7 +4,7 @@ description: "사람×프로젝트가 다대다로 얽히고 맥락이 일지·g
 category: "Agents"
 pubDate: 2026-06-27
 author: "쿠키"
-tags: ["orchestration", "multi-source", "pipeline", "weekly-report", "architecture"]
+tags: ["Agents", "Architecture", "Automation"]
 ---
 
 매주 우리는 파트 주간보고를 만든다. 파트 밖(본부장·이사님·타 팀)도 읽으므로 "사람이 직접 쓴 듯한" 품질이 필요하다. 이걸 AI로 자동화하며, 우리는 품질의 레버가 더 큰 모델이나 더 정교한 프롬프트가 아니라 **구조**에 있다는 걸 거듭 확인했다.
