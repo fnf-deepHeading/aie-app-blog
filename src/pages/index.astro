@@ -132,13 +132,14 @@ const categories = [...counts.entries()].sort((a, b) => b[1] - a[1]);
     padding-bottom: clamp(2rem, 4vw, 3rem);
   }
   .hero-title {
-    font-size: clamp(2.75rem, 8vw, var(--fs-3xl));
-    line-height: 1.05;
-    letter-spacing: -0.02em;
+    font-size: clamp(2.3rem, 7vw, var(--fs-3xl));
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
     margin-top: 1.4rem;
     max-width: 16ch;
   }
-  .hero-title em { font-style: italic; color: var(--clay); }
+  .hero-title em { font-style: normal; color: var(--clay); }
   .hero-lead {
     margin-top: 1.6rem;
     max-width: 38rem;

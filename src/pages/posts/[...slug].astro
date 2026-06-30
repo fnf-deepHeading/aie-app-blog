@@ -99,8 +99,9 @@ const mins = readingTime(post.body);
     border-bottom: 1px solid var(--line);
   }
   .post-title {
-    font-size: clamp(2.25rem, 6vw, var(--fs-2xl));
-    line-height: 1.08;
+    font-size: clamp(1.9rem, 5vw, var(--fs-2xl));
+    font-weight: 700;
+    line-height: 1.12;
     margin-top: 1.1rem;
     max-width: 20ch;
   }
@@ -236,7 +237,8 @@ const mins = readingTime(post.body);
   .nav-card.next { text-align: right; align-items: flex-end; }
   .dir { color: var(--ink-3); }
   .nav-t {
-    font-family: var(--serif);
+    font-family: var(--sans);
+    font-weight: 600;
     font-size: var(--fs-md);
     line-height: 1.25;
     color: var(--ink);

@@ -33,10 +33,10 @@
   --fs-sm:   0.82rem;   /* ~13 */
   --fs-base: 1.0625rem; /* 17 — body (전반 축소) */
   --fs-md:   1.3rem;    /* ~21 */
-  --fs-lg:   1.62rem;   /* ~26 */
-  --fs-xl:   2.1rem;    /* ~34 */
-  --fs-2xl:  3.0rem;    /* ~48 */
-  --fs-3xl:  4.1rem;    /* ~66 — hero */
+  --fs-lg:   1.5rem;    /* ~24 */
+  --fs-xl:   1.85rem;   /* ~30 */
+  --fs-2xl:  2.55rem;   /* ~41 */
+  --fs-3xl:  3.4rem;    /* ~54 — hero */
 
   /* layout */
   --measure: 96rem;     /* page max — 넓은 에디토리얼 컨테이너 */
@@ -116,7 +116,7 @@ ul, ol { padding: 0; list-style: none; }
   background: var(--clay);
 }
 
-h1, h2, h3, h4 { font-family: var(--serif); font-weight: 400; line-height: 1.12; letter-spacing: -0.01em; }
+h1, h2, h3, h4 { font-family: var(--sans); font-weight: 600; line-height: 1.2; letter-spacing: -0.02em; }
 
 /* --- Prose (article body) ---------------------------------- */
 .prose { font-size: var(--fs-base); line-height: 1.78; color: var(--ink); }
