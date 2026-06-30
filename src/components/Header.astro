@@ -11,7 +11,7 @@ const isActive = (href: string) => {
   <div class="wrap bar">
     <a href={withBase('/')} class="brand" aria-label={`${SITE.title} 블로그 홈`}>
       <span class="brand-mark">{SITE.title}</span>
-      <span class="brand-sub mono">tech&nbsp;blog</span>
+      <span class="brand-sub mono"><span class="brand-org">F&amp;F</span> · tech&nbsp;blog</span>
     </a>
     <nav aria-label="주요">
       <ul>
@@ -53,6 +53,7 @@ const isActive = (href: string) => {
     letter-spacing: -0.03em;
     font-weight: 700;
   }
+  .brand-org { color: var(--ink-2); font-weight: 600; }
   .brand-sub {
     font-size: 0.7rem;
     color: var(--ink-3);
