@@ -171,11 +171,56 @@ fnco-minions-project 14   raw 10   frontend 9   backend 8   chacha-system 4 …
 
 "무슨 일이 있었나(기억)"와 "내 데이터에 뭐가 있나(검색)"가 **같은 턴에** 끝난다 — 원문이 "production 에이전트는 종종 둘 다 한 턴에 필요로 한다"고 한 바로 그 지점이다.
 
-### 켜두면 알아서 돈다
+### 그래서, 이 데이터는 언제·어떻게 쌓이나 (우리가 실제로 배선한 것)
 
-- **자동 기록** — 모든 Claude Code 세션의 명령·완료가 훅으로 타임라인에 쌓인다(현재 233행).
-- **15분 동기화(cron)** — 새 결정을 vault 노트로 승격 → obsidian-bot이 임베딩·인덱싱 → 의미검색 편입. 그래서 정확한 단어 없이도 *의미로* 과거 결정이 검색된다.
-- **영속 서비스(launchd)** — 슬랙 게이트웨이·의미검색 봇(:4002)·현황판(:4100)이 재부팅에도 자동 기동. 상태는 언제든 `localhost:4100`에서 실시간으로 본다.
+여기가 핵심이다. 원문은 "shared memory가 있어야 한다"고 했지만, 정작 **누가 언제 그 메모리에 쓰느냐**는 각 팀이 알아서 풀 문제로 남겼다. 나는 세 개의 자동화로 배선했다 — 사람이 "기록해줘"라고 시키지 않아도 쌓이게. 앞서 233행이 "아무도 손으로 안 적었다"고 한 게 바로 이것이다.
+
+| 무엇이 | 언제 | 어떻게 (우리가 붙인 것) | 토큰 |
+|---|---|---|---|
+| worklog(작업 타임라인) | **매 명령·매 완료** | Claude Code 훅 2종 | 0 |
+| decisions → 의미검색 | **15분마다** | Hermes 크론 잡 | 0 |
+| atlas 진행상황 | **15분마다** | 같은 크론 잡 | 0 |
+
+#### ① 쓰기 시점 — Claude Code 훅 (실시간, 매 턴)
+
+Claude Code는 세션 생애의 특정 순간에 외부 스크립트를 부르는 **훅**을 지원한다. 나는 `~/.claude/settings.json`에 두 개를 걸었다.
+
+```jsonc
+// ~/.claude/settings.json
+"UserPromptSubmit": [{ "hooks": [{ "type": "command",
+  "command": "python3 .../chacha_capture.py prompt", "timeout": 15 }]}],
+"Stop":            [{ "hooks": [{ "type": "command",
+  "command": "python3 .../chacha_capture.py stop",   "timeout": 15 }]}]
+```
+
+- **`UserPromptSubmit`** — 내가 프롬프트를 보내는 *순간* 발동. 훅 스크립트가 그 명령 텍스트를 `event: "command"`로 worklog에 append 한다.
+- **`Stop`** — Claude가 응답을 *마치는 순간* 발동. 스크립트가 transcript(JSONL)에서 마지막 assistant 텍스트를 뽑아 요약으로 삼아 `event: "done"`으로 append 한다.
+
+훅에 stdin으로 들어오는 JSON(`prompt`·`session_id`·`cwd`·`transcript_path`)에서 **프로젝트는 `cwd`의 폴더명으로** 자동 판별된다 — 그래서 어느 프로젝트에서 일하든 그 프로젝트 이름으로 자동 분류된다(233행이 17개 프로젝트로 갈린 이유).
+
+> **철칙 하나: 훅은 절대 세션을 방해하지 않는다.** 스크립트는 무슨 일이 있어도 `exit 0`에 stdout을 비우고, 모든 예외를 삼킨다(`try/except: pass`). 타임아웃도 15초로 짧게 건다. 기록이 실패해도 내 작업은 1도 안 끊긴다 — "기록"이 "일"을 인질로 잡으면 안 되니까. 이게 자동 기록을 *신뢰하고 잊을 수 있게* 만드는 조건이다.
+
+#### ② 승격·롤업 시점 — Hermes 크론 (15분마다)
+
+훅이 원천을 실시간으로 쌓는다면, 크론은 그 원천을 *가공*한다. Hermes(슬랙 봇)의 크론에 `chacha-memory-sync` 잡을 등록했다.
+
+```bash
+# 스케줄: */15 * * * *  (15분마다) · no_agent 스크립트 잡 → LLM 안 부름, 토큰 0
+# sync-shared-memory.sh
+python3 promote_decisions_to_vault.py   # ① 새 결정 → Obsidian vault 노트로 승격
+python3 atlas_progress_sync.py          # ② atlas 노드에 진행상황 롤업
+```
+
+- **`promote_decisions_to_vault.py`** — 아직 승격 안 된 결정(`promoted_at`이 빈 행)만 골라 vault 노트로 떨군다. obsidian-bot(:4002) watcher가 그 노트를 임베딩·인덱싱하면 **의미검색에 편입**된다. `promoted_at`으로 이미 한 건 건너뛰므로 **멱등** — 15분마다 돌아도 중복이 없다. (이게 "정확한 단어 없이도 *의미로* 과거 결정이 검색되는" 경로다.)
+- **`atlas_progress_sync.py`** — 각 프로젝트의 최근 결정을 atlas 노드의 "진행상황" 섹션으로 롤업한다(뒤 3장의 관계 계층과 여기서 만난다).
+
+크론 잡을 `no_agent`로 둔 게 포인트다 — AI를 부르지 않고 스크립트만 돌린다. **주기 동기화에 LLM 토큰을 한 방울도 안 쓴다.** 지금까지 278회 조용히 돌았다.
+
+#### ③ 영속 — launchd (재부팅에도 살아있게)
+
+훅과 크론이 의미가 있으려면 받는 쪽이 늘 떠 있어야 한다. macOS `launchd`에 세 서비스를 등록해 재부팅에도 자동 기동시켰다 — **Hermes 게이트웨이**(크론 디스패처 겸), **의미검색 봇**(:4002), **현황판**(:4100). 지금 상태는 언제든 `localhost:4100`에서 실시간으로 본다.
+
+> 정리하면 — **훅이 매 턴 원천을 append(실시간), 크론이 15분마다 그 원천을 의미검색·관계도로 가공(무토큰), launchd가 이 모두를 항상 살려둔다.** "언제 쌓이나"에 사람은 없다. 붙여두면, 일하는 동안 저절로 쌓인다.
 
 ---
 
