@@ -13,19 +13,23 @@ tags: ["Ops", "Architecture"]
 
 배경이 "멀티 파드 전환 + 사용자 증가"이다 보니, 의심은 자연히 둘로 갈렸다 — **부하가 늘어서 터지는가, 아니면 코드가 새는가?** 이 질문에 짐작으로 답하면 엉뚱한 걸 고친다. 그래서 이 글은 매 단계를 **실측으로 가려가며** 방어선을 쌓은 두 달의 기록이다. 그리고 한 방에 잡히지 않았다 — 원인을 하나 막으면 방아쇠는 다음 병목으로 옮겨갔고, 두 달에 걸쳐 방어선을 네 겹 쌓고서야 안정됐다. 어디가 새고 있었고, 어떻게 막았고, 왜 그것만으론 부족했는지까지 순서대로 적는다. ("부하냐 코드냐"의 데이터 답은 글 후반 **〈데이터로 본 안정화〉** 절에 있다.)
 
-> **📖 잠깐, 용어 정리 — 힙·GC·OOM (아는 분은 건너뛰세요)**
->
-> 서버 운영이 처음이면 아래 다섯 단어만 알고 가면 이 글이 다 읽힙니다.
->
-> - **힙(heap)**: 프로그램이 돌면서 만드는 객체(세션·응답 데이터 등)를 담아두는 메모리 공간.
-> - **GC(가비지 컬렉션)**: 힙에서 **이제 아무도 안 쓰는(= 어떤 코드도 안 가리키는) 객체를 자동으로 치우는 청소부.** JavaScript/Node는 메모리를 손으로 반납하지 않고 이 GC가 대신한다. 단, **참조가 하나라도 남아 있으면 못 치운다.**
-> - **메모리 누수(leak)**: 죽은 객체인데 코드가 실수로 계속 가리키고 있어 GC가 못 치우는 상태 → 힙이 안 줄고 계속 찬다. (이 글의 6월 사건이 정확히 이것 — 죽은 세션을 `Map`이 붙들고 있었다.)
-> - **OOM(Out Of Memory)**: 힙/메모리가 한도를 넘어 더 못 담는 상태. **두 종류**가 있고 이 글 내내 구분한다 —
->     - **V8 FATAL `Reached heap limit`**: Node가 스스로 "힙 한도 초과"로 죽음.
->     - **커널 OOMKill (`exit 137`)**: 컨테이너 메모리 한도 초과로 OS가 프로세스를 강제 종료.
-> - **`--max-old-space-size`**: V8 힙에서 오래 사는 객체 영역(old gen)의 상한선. 여기 닿으면 GC를 세게 돌리고, 그래도 못 줄이면 위의 FATAL이 난다.
->
-> 한 줄 요약: **GC는 "아무도 안 가리키는 것"만 치운다. 누수는 코드가 죽은 객체를 계속 가리켜 GC가 손 못 대는 사고다.**
+<aside style="font-family: var(--sans); font-size: 0.9rem; line-height: 1.65; background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px; padding: 1em 1.25em; color: var(--ink-2); max-width: var(--measure-text); font-style: normal;">
+<p style="margin: 0 0 0.5em; font-weight: 600; color: var(--ink);">📖 잠깐, 용어 정리 — 힙·GC·OOM <span style="font-weight: 400; opacity: 0.7;">(아는 분은 건너뛰세요)</span></p>
+<p style="margin: 0 0 0.6em;">서버 운영이 처음이면 아래 다섯 단어만 알고 가면 이 글이 다 읽힙니다.</p>
+<ul style="margin: 0; padding-left: 1.2em; list-style: disc;">
+<li style="margin: 0.25em 0;"><strong>힙(heap)</strong>: 프로그램이 돌면서 만드는 객체(세션·응답 데이터 등)를 담아두는 메모리 공간.</li>
+<li style="margin: 0.25em 0;"><strong>GC(가비지 컬렉션)</strong>: 힙에서 <strong>이제 아무도 안 쓰는(= 어떤 코드도 안 가리키는) 객체를 자동으로 치우는 청소부.</strong> JavaScript/Node는 메모리를 손으로 반납하지 않고 이 GC가 대신한다. 단, <strong>참조가 하나라도 남아 있으면 못 치운다.</strong></li>
+<li style="margin: 0.25em 0;"><strong>메모리 누수(leak)</strong>: 죽은 객체인데 코드가 실수로 계속 가리키고 있어 GC가 못 치우는 상태 → 힙이 안 줄고 계속 찬다. (이 글의 6월 사건이 정확히 이것 — 죽은 세션을 <code>Map</code>이 붙들고 있었다.)</li>
+<li style="margin: 0.25em 0;"><strong>OOM(Out Of Memory)</strong>: 힙/메모리가 한도를 넘어 더 못 담는 상태. <strong>두 종류</strong>가 있고 이 글 내내 구분한다 —
+<ul style="margin: 0.2em 0; padding-left: 1.2em; list-style: circle;">
+<li style="margin: 0.15em 0;"><strong>V8 FATAL <code>Reached heap limit</code></strong>: Node가 스스로 "힙 한도 초과"로 죽음.</li>
+<li style="margin: 0.15em 0;"><strong>커널 OOMKill (<code>exit 137</code>)</strong>: 컨테이너 메모리 한도 초과로 OS가 프로세스를 강제 종료.</li>
+</ul>
+</li>
+<li style="margin: 0.25em 0;"><strong><code>--max-old-space-size</code></strong>: V8 힙에서 오래 사는 객체 영역(old gen)의 상한선. 여기 닿으면 GC를 세게 돌리고, 그래도 못 줄이면 위의 FATAL이 난다.</li>
+</ul>
+<p style="margin: 0.6em 0 0;">한 줄 요약: <strong>GC는 "아무도 안 가리키는 것"만 치운다. 누수는 코드가 죽은 객체를 계속 가리켜 GC가 손 못 대는 사고다.</strong></p>
+</aside>
 
 ## OOM이 옮겨 다닌 경로
 
