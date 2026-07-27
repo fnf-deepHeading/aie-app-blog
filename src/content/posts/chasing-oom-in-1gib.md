@@ -7,11 +7,11 @@ author: "조이"
 tags: ["Ops", "Architecture"]
 ---
 
-> **요약** — 컨테이너 메모리 1GiB짜리 `dcs-ai-server`가 매일 `exit 137`(OOMKill)로 죽었다. ① V8 힙 상한을 걸어 커널 OOMKill을 V8 GC로 옮기고, ② MCP 세션·서버 객체가 스토어에 무한 누적되던 누수를 close 보강·캡 적용·TTL 비연장으로 하나씩 막았다. 그래도 재발해서 ③ **세션 기반 구조 자체를 stateless로 갈아엎어** 누수 원인을 소멸시켰다. 그러자 OOM의 방아쇠가 ④ **프록시 대형 응답 통버퍼링**으로 옮겨갔고, host별 서킷브레이커·타임아웃·동시성 캡으로 막았다. 교훈은 하나다 — **누수는 패치가 아니라 구조로 막고, 방어선은 실측으로 긋는다.**
+> **요약** — 컨테이너 메모리 1GiB짜리 `dcs-ai-server`가 매일 `exit 137`(OOMKill)로 죽었다. ① V8 힙 상한을 걸어 커널 OOMKill을 V8 GC로 옮기고, ② MCP 세션·서버 객체가 스토어에 무한 누적되던 누수를 close 보강·캡 적용·TTL 비연장으로 하나씩 막았다. 그래도 재발해서 ③ **세션 기반 구조 자체를 stateless로 갈아엎어** 누수 원인을 소멸시켰다. 그러자 OOM의 방아쇠가 ④ **프록시 대형 응답 통버퍼링**으로 옮겨갔고, host별 서킷브레이커·타임아웃·동시성 캡으로 막았다. 그래도 대형 응답이 ⑤ **응답을 로깅하던 미들웨어에서 원본+파싱+클론 3중으로 복사**되던 마지막 구멍이 남아 있었는데, 로그 바디에 상한을 걸어 닫자 prd는 **4일간(트래픽 최다일 포함) 무OOM으로 안정**됐다. 교훈은 하나다 — **누수는 패치가 아니라 구조로 막고, 방어선은 실측으로 긋는다.**
 
 `dcs-ai-server`는 EC2 단독으로 돌던 것이 **EKS로 이관되며 멀티 파드(HPA로 3~14개 오르내림)**로 굴러가게 됐다. 그 뒤 사용자도 꾸준히 늘었다. 파드 하나의 메모리 limit은 **1GiB**. 어느 날부터 이 파드들이 하루에도 몇 번씩 `exit 137`로 죽기 시작했다. 137은 커널이 `SIGKILL`(128+9)로 프로세스를 강제 종료했다는 뜻 — **메모리 한도를 넘겨 OOMKill 당한 것**이다.
 
-배경이 "멀티 파드 전환 + 사용자 증가"이다 보니, 의심은 자연히 둘로 갈렸다 — **부하가 늘어서 터지는가, 아니면 코드가 새는가?** 이 질문에 짐작으로 답하면 엉뚱한 걸 고친다. 그래서 이 글은 매 단계를 **실측으로 가려가며** 방어선을 쌓은 두 달의 기록이다. 그리고 한 방에 잡히지 않았다 — 원인을 하나 막으면 방아쇠는 다음 병목으로 옮겨갔고, 두 달에 걸쳐 방어선을 네 겹 쌓고서야 안정됐다. 어디가 새고 있었고, 어떻게 막았고, 왜 그것만으론 부족했는지까지 순서대로 적는다. ("부하냐 코드냐"의 데이터 답은 글 후반 **〈데이터로 본 안정화〉** 절에 있다.)
+배경이 "멀티 파드 전환 + 사용자 증가"이다 보니, 의심은 자연히 둘로 갈렸다 — **부하가 늘어서 터지는가, 아니면 코드가 새는가?** 이 질문에 짐작으로 답하면 엉뚱한 걸 고친다. 그래서 이 글은 매 단계를 **실측으로 가려가며** 방어선을 쌓은 두 달의 기록이다. 그리고 한 방에 잡히지 않았다 — 원인을 하나 막으면 방아쇠는 다음 병목으로 옮겨갔고, 두 달에 걸쳐 방어선을 다섯 겹 쌓고서야 안정됐다. 어디가 새고 있었고, 어떻게 막았고, 왜 그것만으론 부족했는지까지 순서대로 적는다. ("부하냐 코드냐"의 데이터 답은 글 후반 **〈데이터로 본 안정화〉** 절에 있다.)
 
 <aside style="font-family: var(--sans); font-size: 0.9rem; line-height: 1.65; background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px; padding: 1em 1.25em; color: var(--ink-2); max-width: var(--measure-text); font-style: normal;">
 <p style="margin: 0 0 0.5em; font-weight: 600; color: var(--ink);">📖 잠깐, 용어 정리 — 힙·GC·OOM <span style="font-weight: 400; opacity: 0.7;">(아는 분은 건너뛰세요)</span></p>
@@ -41,8 +41,9 @@ graph LR
   B --> C[② MCP 세션/서버<br/>무한 누적<br/>#919·#933·#964]
   C --> D[③ 세션 구조 자체가<br/>누수 온상<br/>stateless #1023]
   D --> E[④ 프록시 대형응답<br/>통버퍼링 버스트<br/>#1110]
+  E --> F[⑤ 응답 로깅이<br/>대형응답 3중 복사<br/>#1154]
   style A fill:#F5D5D5,stroke:#C88
-  style E fill:#D5E8D5,stroke:#8B8
+  style F fill:#D5E8D5,stroke:#8B8
 ```
 
 두더지 잡기처럼 보이지만, 실제로는 **표면 패치 → 구조적 제거 → 새 방아쇠 방어**로 성격이 바뀌어 갔다. 하나씩 보자.
@@ -203,6 +204,34 @@ graph TD
 
 이 캡은 정상 트래픽엔 절대 안 걸린다(정상 동시성이 파드당 1 미만). 오직 **버스트 안전밸브**로만 작동한다. per-pod 특성상 LB가 바쁜 파드로 보내면 타 파드가 한가해도 503이 날 수 있는데, 이건 대기큐로 완화하고 `Retry-After`는 후속 과제로 남겼다.
 
+## 6. 방아쇠가 한 번 더 — 응답 로깅이 대형 응답을 3중 버퍼링 #1154
+
+#1110으로 프록시 버퍼링을 캡으로 묶고 하루가 지난 **7/23 오전, OOM이 또 났다**(kv0.1.65, 10:07~11:44에 5건). upstream `fetch`+`text` 버퍼링의 동시성을 막았는데도 파드가 죽었다. 방아쇠가 **또 옮겨간** 것이다 — 이번엔 프록시가 응답을 받은 *다음*, 그 응답을 남기던 **로깅 미들웨어**였다.
+
+로깅 미들웨어는 디버깅을 위해 응답 바디를 기록하는데, 그 과정에서 한 응답을 **세 번** 메모리에 들고 있었다:
+
+1. upstream이 준 **원본 문자열**
+2. `JSON.parse`한 **객체**
+3. 민감정보 마스킹용 `sanitizeObject` **딥클론**
+
+평소엔 응답이 몇 KB라 티도 안 났다. 그런데 이날 방아쇠는 **39~42MB짜리 응답**이었다. 원본+파싱+클론 3중이면 응답 하나에 **100MB를 훌쩍 넘긴다.** #1110의 동시성 캡은 upstream 버퍼링을 겨눴지, 이 **로깅 경로의 복사본은 캡 밖**이었다 — 그래서 똑같은 "대형 응답"이라는 방아쇠가 캡을 우회해 파드를 다시 넘어뜨렸다.
+
+**수정(#1154).** 로그 바디에 상한(`MAX_LOG_BODY_SIZE = 1MB`)을 뒀다. 1MB를 넘으면 파싱·클론을 **건너뛰고** 크기와 앞 500자 미리보기만 남긴다.
+
+```typescript
+const MAX_LOG_BODY_SIZE = 1024 * 1024; // 1MB
+const isOversized =
+  typeof data === 'string' && data.length > MAX_LOG_BODY_SIZE;
+
+const logPayload = isOversized
+  ? { truncated: true, size: data.length, preview: data.slice(0, 500) }
+  : /* 기존 파싱 + 마스킹 경로 */;
+```
+
+임계값 1MB의 근거도 실측이다 — `/proxy/kg` 평시 응답 151건 기준 1MB는 **정상 응답의 3.3%만** 잘리는 반면, OOM을 낸 39~42MB 응답과는 **15배 이상** 여유가 있다. "관측을 위한 로깅이 정작 관측 대상(서버)을 죽인다"는, OOM 사냥의 마지막 아이러니였다.
+
+7/23 17:10에 `kv0.1.67`로 배포됐다. (배포 후 4일 실측은 아래 〈데이터로 본 안정화〉 ⑤·⑥에서 확정한다.)
+
 ## 데이터로 본 안정화 — 수정 전과 후
 
 여기까지는 서사다. 그런데 이 서사가 맞는지는 숫자로 확인해야 한다. 배경은 이렇다 — 이 서버는 EC2에서 **EKS(멀티 파드)로 옮겨졌고**, 그 뒤 **사용자도 계속 늘었다**. 그러면 자연스러운 의심이 생긴다: *OOM이 늘고 준 건 우리가 코드를 고쳐서인가, 아니면 그냥 트래픽이 늘고 줄어서인가?* 이걸 가르지 못하면 위의 "수정이 효과 있었다"는 주장은 근거가 없다.
@@ -252,6 +281,55 @@ graph TD
 
 > stateless(7/9)는 오히려 **범인이 아니다.** 그 주(7/06)가 OOM 최저였고, stateless는 세션 폴링을 없애 **MCP 요청량을 4배 줄였다**(1.34M→0.36M). 사용자가 떠난 게 아니라 불필요한 세션 관리 트래픽이 사라진 것 — 이것도 코드 효과다.
 
+<figure style="margin:2em 0;">
+<svg viewBox="0 0 740 350" style="width:100%;height:auto;font-family:inherit" role="img" aria-label="주별 OOM 빈도(백만 요청당): 6/08 3.7, 6/15 1.4, 6/22 1.8, 6/29 1.0, 7/06 0.4, 7/13 1.6, 7/20 0.9, 7/24~27 0.0">
+<text x="44" y="15" font-size="13" font-weight="600" fill="#211E29">주별 OOM 빈도 (백만 요청당) — 수정이 쌓일수록 0으로</text>
+<line x1="52" y1="232.5" x2="704" y2="232.5" stroke="#E7E5EE"/>
+<line x1="52" y1="165" x2="704" y2="165" stroke="#E7E5EE"/>
+<line x1="52" y1="97.5" x2="704" y2="97.5" stroke="#E7E5EE"/>
+<line x1="52" y1="30" x2="704" y2="30" stroke="#E7E5EE"/>
+<line x1="52" y1="300" x2="704" y2="300" stroke="#D7D3E2"/>
+<text x="44" y="304" font-size="10" text-anchor="end" fill="#585563">0</text>
+<text x="44" y="236.5" font-size="10" text-anchor="end" fill="#585563">1</text>
+<text x="44" y="169" font-size="10" text-anchor="end" fill="#585563">2</text>
+<text x="44" y="101.5" font-size="10" text-anchor="end" fill="#585563">3</text>
+<text x="44" y="34" font-size="10" text-anchor="end" fill="#585563">4</text>
+<rect x="72.8" y="50.3" width="40" height="249.7" rx="3" fill="#8A63D6"/>
+<rect x="154.3" y="205.5" width="40" height="94.5" rx="3" fill="#8A63D6"/>
+<rect x="235.8" y="178.5" width="40" height="121.5" rx="3" fill="#8A63D6"/>
+<rect x="317.3" y="232.5" width="40" height="67.5" rx="3" fill="#8A63D6"/>
+<rect x="398.8" y="273" width="40" height="27" rx="3" fill="#8A63D6"/>
+<rect x="480.3" y="192" width="40" height="108" rx="3" fill="#8A63D6"/>
+<rect x="561.8" y="239.3" width="40" height="60.7" rx="3" fill="#8A63D6"/>
+<circle cx="663.3" cy="300" r="4.5" fill="#3E8E5A"/>
+<text x="92.8" y="44" font-size="12" font-weight="600" text-anchor="middle" fill="#211E29">3.7</text>
+<text x="174.3" y="199.5" font-size="12" font-weight="600" text-anchor="middle" fill="#211E29">1.4</text>
+<text x="255.8" y="172.5" font-size="12" font-weight="600" text-anchor="middle" fill="#211E29">1.8</text>
+<text x="337.3" y="226.5" font-size="12" font-weight="600" text-anchor="middle" fill="#211E29">1.0</text>
+<text x="418.8" y="267" font-size="12" font-weight="600" text-anchor="middle" fill="#211E29">0.4</text>
+<text x="500.3" y="186" font-size="12" font-weight="600" text-anchor="middle" fill="#211E29">1.6</text>
+<text x="581.8" y="233.3" font-size="12" font-weight="600" text-anchor="middle" fill="#211E29">0.9</text>
+<text x="663.3" y="290" font-size="12" font-weight="700" text-anchor="middle" fill="#3E8E5A">0.0</text>
+<text x="92.8" y="318" font-size="11" text-anchor="middle" fill="#585563">6/08</text>
+<text x="174.3" y="318" font-size="11" text-anchor="middle" fill="#585563">6/15</text>
+<text x="255.8" y="318" font-size="11" text-anchor="middle" fill="#585563">6/22</text>
+<text x="337.3" y="318" font-size="11" text-anchor="middle" fill="#585563">6/29</text>
+<text x="418.8" y="318" font-size="11" text-anchor="middle" fill="#585563">7/06</text>
+<text x="500.3" y="318" font-size="11" text-anchor="middle" fill="#585563">7/13</text>
+<text x="581.8" y="318" font-size="11" text-anchor="middle" fill="#585563">7/20</text>
+<text x="663.3" y="318" font-size="11" text-anchor="middle" fill="#585563">7/24~</text>
+<text x="92.8" y="333" font-size="9.5" text-anchor="middle" fill="#7A57D1">#909·919</text>
+<text x="174.3" y="333" font-size="9.5" text-anchor="middle" fill="#7A57D1">#933</text>
+<text x="255.8" y="333" font-size="9.5" text-anchor="middle" fill="#7A57D1">#964</text>
+<text x="337.3" y="333" font-size="9.5" text-anchor="middle" fill="#585563">안정화</text>
+<text x="418.8" y="333" font-size="9.5" text-anchor="middle" fill="#7A57D1">stateless</text>
+<text x="500.3" y="333" font-size="9.5" text-anchor="middle" fill="#585563">프록시노출</text>
+<text x="581.8" y="333" font-size="9.5" text-anchor="middle" fill="#585563">—</text>
+<text x="663.3" y="333" font-size="9.5" text-anchor="middle" fill="#3E8E5A">#1110·1154</text>
+</svg>
+<figcaption style="font-size:0.82rem;color:#585563;margin-top:0.6em;line-height:1.55;">백만 요청당으로 정규화한 OOM 에피소드. <strong>6/15</strong>엔 트래픽이 늘었는데도 3.7→1.4로 떨어졌고(코드 효과), <strong>7/13</strong>엔 트래픽이 −40%인데 OOM이 되레 늘었다(프록시 노출) — 부하가 아니라 코드가 방아쇠였다는 증거. 마지막 <strong>7/24~27</strong>은 #1110·#1154 배포 후 트래픽 최다에도 0건.</figcaption>
+</figure>
+
 ### ③ 메모리: "천장 체류"가 사라졌다
 
 크래시 수 말고 메모리 점유 패턴도 같은 이야기를 한다. working_set이 컨테이너 한도(1GiB)의 **84%를 넘은 샘플 수**를 주별로 세어봤다.
@@ -285,29 +363,102 @@ graph TD
 
 교훈: **모든 수정이 헤드라인 숫자를 바꾸진 않는다.** #929는 stateless가 들여온 요청당 낭비가 부하에서 누적되지 않게 막는 **예방적 위생 수정**이지, 오늘 지표를 흔드는 종류가 아니다. 그래도 되돌릴 이유는 없다 — "하던 일을 덜 하게" 만든 것이라 나빠질 수가 없다.
 
-### ⑤ #1110 배포 첫 실측 — peak 900 → 547 (예비)
+### ⑤ 안정 확정 — working_set 903MB → 286MB, 4일 무OOM
 
-`#1110`(프록시 방어)을 **7/23 prd 배포**했다(`kv0.1.66`). 배포 방식에도 한 가지 판단이 있었다 — 정식 경로(main→dev→prd)로 올리면 그 사이 main에 쌓여 있던 **무관한 커밋들까지 운영에 함께 실린다.** 그래서 검증된 **이 세 커밋(방어층 2개 + SSRF allowlist 1개)만 prd에 cherry-pick**해 올렸다. (main엔 이미 정식 머지돼 있어, 다음 정식 배포 때 되돌아갈 위험은 없다.)
+`#1110`(프록시 방어, `kv0.1.66` 7/23 13:24)과 `#1154`(로그 바디 상한, `kv0.1.67` 7/23 17:10)를 잇따라 배포했다. #1110은 정식 경로(main→dev→prd)로 올리면 그 사이 main에 쌓인 **무관한 커밋들까지 운영에 함께 실리므로**, 검증된 **세 커밋(방어층 2개 + SSRF allowlist 1개)만 cherry-pick**해 올렸다. 지난 편에서 "예비 신호"라 못 박길 미뤘던 것을, 이번엔 나흘 실측으로 확정한다.
 
-배포 직전/직후의 working_set **peak**(그 순간 가장 높은 파드 하나의 값)를 같은 지표로 나란히 놨다:
+**working_set peak — 900대에서 286MB로.** OOM 순간마다 컨테이너 메모리는 **정확히 한도의 88~90%(895~917MB)까지** 치솟았다. 배포 후 나흘간 그 스파이크가 **한 번도** 재현되지 않았다.
 
-| 시점 (KST) | working_set peak | 버전 |
+| 시점 (KST) | working_set peak | 상태 |
 |---|---:|---|
-| 7/22 오후~밤 | 700~849MB 빈번 | 배포 전 (kv0.1.65) |
-| 7/23 10:00·10:10·11:40 | **900·899·903MB** (한도의 88~90%) | 배포 전 |
-| ── 7/23 13:28 · #1110 배포 ── | | |
-| 7/23 13:30~14:20 | **~547MB** (최고), 평소 240~500 | 배포 후 (kv0.1.66) |
+| 7/20 22:00 | 917MB | OOM (kv0.1.62) |
+| 7/21 16:00 | 895MB | OOM |
+| 7/23 10:00~11:40 | **899~903MB** (한도의 88~90%) | OOM (kv0.1.65, 마지막) |
+| ── 7/23 오후 · #1110 + #1154 배포 ── | | |
+| **7/23 12:00 ~ 7/27 13:30 (4일)** | **최대 286MB** (한도의 28%) | **무OOM** ✅ |
 
-**peak가 900대(OOM 근접)에서 ~547MB로, 대략 절반으로 눌렸다.** 배포 전엔 그날 오전에만 900을 세 번 찍었는데, 배포 후 첫 한 시간은 트래픽 스파이크가 있어도 500대에서 멈췄다. 캡이 "한 파드가 동시에 물 수 있는 큰 응답 수"에 상한을 걸어, 버스트가 1GiB로 치닫는 걸 끊은 것이다.
+배포 후 working_set은 **234~286MB에서 거의 일직선**이다. 900대 스파이크의 소멸 = 대형 응답 3중 버퍼링 경로가 닫힌 **직접 증거**다.
 
-정직하게, 이건 **배포 후 ~1시간짜리 예비 신호**다. 배포 전 900 peak도 몇 시간에 한 번꼴로 간헐적으로 떴으니, 한 시간 데이터로 "해결"이라 못 박긴 이르다. **오후 피크 트래픽을 지나며 계속 500대에 눌리는지, OOM 모니터가 며칠간 조용한지**를 봐야 확정된다.
+<figure style="margin:2em 0;">
+<svg viewBox="0 0 740 340" style="width:100%;height:auto;font-family:inherit" role="img" aria-label="컨테이너 메모리 working_set peak: 7/20~23 OOM기 895~917MB, 7/23 오후 #1110·#1154 배포 후 286MB 이하로 급락">
+<text x="44" y="15" font-size="13" font-weight="600" fill="#211E29">컨테이너 메모리(working_set) peak — 7/23 수정 후 절벽처럼 내려앉다</text>
+<rect x="56" y="30" width="644" height="41.6" fill="#C0555B" fill-opacity="0.10"/>
+<text x="694" y="46" font-size="9.5" text-anchor="end" fill="#B5544F">OOM 위험대 · 한도의 84%↑</text>
+<line x1="56" y1="30" x2="700" y2="30" stroke="#C99" stroke-width="1" stroke-dasharray="4 3"/>
+<text x="696" y="26" font-size="10" text-anchor="end" fill="#585563">1GiB 한도</text>
+<line x1="56" y1="225" x2="700" y2="225" stroke="#E7E5EE"/>
+<line x1="56" y1="160" x2="700" y2="160" stroke="#E7E5EE"/>
+<line x1="56" y1="95" x2="700" y2="95" stroke="#E7E5EE"/>
+<line x1="56" y1="290" x2="700" y2="290" stroke="#D7D3E2"/>
+<text x="48" y="294" font-size="10" text-anchor="end" fill="#585563">0</text>
+<text x="48" y="229" font-size="10" text-anchor="end" fill="#585563">256</text>
+<text x="48" y="164" font-size="10" text-anchor="end" fill="#585563">512</text>
+<text x="48" y="99" font-size="10" text-anchor="end" fill="#585563">768</text>
+<text x="48" y="34" font-size="10" text-anchor="end" fill="#585563">1024</text>
+<polyline points="56,57.1 136.5,62.7 217,74.4 297.5,60.7 378,217.4 458.5,217.4 539,230.3 619.5,230.3 700,225.3" fill="none" stroke="#7A57D1" stroke-width="2"/>
+<line x1="337.75" y1="30" x2="337.75" y2="290" stroke="#3E8E5A" stroke-width="1.5" stroke-dasharray="5 3"/>
+<text x="332" y="98" font-size="10" text-anchor="end" fill="#3E8E5A">#1110·#1154</text>
+<text x="332" y="111" font-size="10" text-anchor="end" fill="#3E8E5A">배포 (7/23 오후)</text>
+<circle cx="56" cy="57.1" r="3.8" fill="#C0555B" stroke="#FFFFFF" stroke-width="1.3"/>
+<circle cx="136.5" cy="62.7" r="3.8" fill="#C0555B" stroke="#FFFFFF" stroke-width="1.3"/>
+<circle cx="217" cy="74.4" r="3.8" fill="#C0555B" stroke="#FFFFFF" stroke-width="1.3"/>
+<circle cx="297.5" cy="60.7" r="3.8" fill="#C0555B" stroke="#FFFFFF" stroke-width="1.3"/>
+<circle cx="378" cy="217.4" r="3.8" fill="#3E8E5A" stroke="#FFFFFF" stroke-width="1.3"/>
+<circle cx="458.5" cy="217.4" r="3.8" fill="#3E8E5A" stroke="#FFFFFF" stroke-width="1.3"/>
+<circle cx="539" cy="230.3" r="3.8" fill="#3E8E5A" stroke="#FFFFFF" stroke-width="1.3"/>
+<circle cx="619.5" cy="230.3" r="3.8" fill="#3E8E5A" stroke="#FFFFFF" stroke-width="1.3"/>
+<circle cx="700" cy="225.3" r="3.8" fill="#3E8E5A" stroke="#FFFFFF" stroke-width="1.3"/>
+<text x="62" y="52" font-size="11" font-weight="600" text-anchor="start" fill="#C0555B">917MB</text>
+<text x="297.5" y="52" font-size="11" font-weight="600" text-anchor="middle" fill="#C0555B">903MB</text>
+<text x="384" y="213" font-size="11" font-weight="700" text-anchor="start" fill="#3E8E5A">286MB</text>
+<text x="56" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/20</text>
+<text x="136.5" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/21</text>
+<text x="217" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/22</text>
+<text x="297.5" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/23오전</text>
+<text x="378" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/23오후</text>
+<text x="458.5" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/24</text>
+<text x="539" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/25</text>
+<text x="619.5" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/26</text>
+<text x="700" y="305" font-size="9.5" text-anchor="middle" fill="#585563">7/27</text>
+</svg>
+<figcaption style="font-size:0.82rem;color:#585563;margin-top:0.6em;line-height:1.55;">파드 컨테이너 메모리(working_set) 최고치. OOM이 나던 7/20~23엔 한도(1GiB)의 88~90%인 <strong>900MB대</strong>까지 치솟았다(빨강). 7/23 오후 #1110·#1154 배포 직후 <strong>286MB(28%)</strong>로 내려앉아 나흘간 그대로(초록) — 대형 응답 버퍼링이 1GiB로 치닫던 경로가 닫혔다.</figcaption>
+</figure>
 
-한 가지 더 — 배포 후에도 peak가 baseline(~200MB)이 아니라 500대인 건, 응답을 **여전히 통째로 버퍼링**하기 때문이다. 캡은 "1GiB를 넘겨 죽는 것"을 막는 안전밸브일 뿐, 요청당 메모리를 근본적으로 줄이진 않는다. 그건 응답을 버퍼링 없이 흘려보내는 **#1109(스트리밍, 다음 과제)**의 몫이다.
+**OOM 모니터 — 4일 무발화.** 마지막 `Reached heap limit`은 7/23 11:44(kv0.1.65). 이후 지금(7/27 13:30)까지 **약 98시간 0건**. 그동안 prd는 `kv0.1.68` 그대로였다 — 추가 배포로 인한 착시가 아니다.
+
+**그리고 이번엔 "주말이라 조용한" 게 아니다.** 부하와 나란히 놓으면:
+
+| 날짜 | 요청 수 | OOM | working_set peak |
+|---|---:|---:|---:|
+| 7/23 목 (수정 전) | 826k | 5 | 903MB |
+| **7/24 금 (수정 후)** | **1,555k — 전 구간 최다** | **0** | 286MB |
+| 7/25 토 | 229k | 0 | ~235MB |
+| 7/26 일 | 237k | 0 | ~235MB |
+| 7/27 월 (오전 4.5h, 램프업) | 249k | 0 | ~255MB |
+
+**전 관찰 구간에서 트래픽이 가장 높았던 날(금 155만 req)에 OOM이 0**이었다. 정작 OOM이 터지던 7/20~23은 77만~97만으로 **더 낮았다.** 부하가 늘었는데 OOM은 사라졌다 — ②에서 정규화로 보였던 "부하 아닌 코드"가, 이번엔 정규화조차 필요 없이 **원자료로** 확정된 셈이다. (주말은 트래픽이 낮아 그 이틀만으론 증거력이 약하지만, 금요일 고부하와 월요일 램프업이 정상 부하 구간을 덮는다.)
+
+한 가지는 지난 편 그대로다 — 안정기 working_set이 baseline(~200MB)이 아니라 234~286MB인 건, 응답을 **여전히 통째로 버퍼링**하기 때문이다. 캡과 로그 상한은 "1GiB를 넘겨 죽는 것"을 막는 안전밸브지, 요청당 메모리를 근본적으로 줄이진 않는다. 그건 **#1109(스트리밍)**의 몫으로 남아 있다.
+
+### ⑥ 한눈에 — 불안정기 vs 안정기
+
+두 달의 궤적을 지표로 못 박으면 이렇다.
+
+| 지표 | 6/8 최악기 | 7/20~23 프록시 OOM기 | **7/24~27 수정 후 (현재)** |
+|---|---|---|---|
+| OOM 빈도 | **71건/일** (~56파드) | 산발 버스트 (7/21·23) | **0건 / 4일** ✅ |
+| working_set peak | 상시 ~90% | 895~917MB 버스트 | **≤286MB (28%)** |
+| 천장(84%+) 체류 | 10/21 샘플 | 간헐 버스트 | **0** |
+| heap_used 평시 | 천장 눌러앉음 | ~145MB | ~140~180MB flat |
+| 주간/일 트래픽 | 4.07M/주 | 2.3~3.1M/주 | **금 1.55M/일 (최다)** |
+| 컨테이너 재시작 | 다수 | 7/21 **25**·7/23 10 | 주말·월 **0** |
+
+71건/일에서 시작해 — 개별 누수 패치가 자릿수를 깎고(→ 한 자릿수), stateless가 MCP 누수 계열을 끊고(→ 5일 클린), 프록시 캡과 로그 상한이 마지막 대형응답 경로를 막아(→ 4일 클린, 트래픽 최다일에도 0건) — 지금의 안정에 도달했다. (재시작 수치는 배포·HPA 스케일링이 섞여 노이즈가 있지만 방향은 같다.)
 
 ### 남은 검증
 
-- **#1110 다지기**: 위 예비 신호(900→547)를 며칠 치 실측 + 오후 피크 + OOM 모니터 무발화로 굳힌다. 트래픽이 요일마다 출렁이므로, "배포 후 숫자"만 보지 말고 **트래픽으로 정규화**해 대봐야 fix 효과인지 주말 효과인지 갈린다.
-- **#1109 스트리밍**: 통버퍼링 자체를 없애 peak를 baseline(~200MB)으로 되돌리는 근본 수정. 팀 논의 후 착수 예정.
+- **#1110 + #1154 확정 (완료)**: 위 ⑤·⑥이 그 결과다. 900대 peak 소멸 + 4일 무OOM + **트래픽 최다일(금 155만 req)에도 0건**으로, 지난 편의 "예비 신호(900→547)"를 실측으로 굳혔다.
+- **#1109 스트리밍 (다음)**: 통버퍼링 자체를 없애 안정기 peak(현재 ~250MB)를 baseline(~200MB)으로 되돌리는 근본 수정. 팀 논의 후 착수 예정.
 
 두 건 다 "고쳤더니 좋아졌다"가 아니라 **같은 지표를 배포 전후로 정규화해 대보고** 다음 편에서 숫자로 확정한다.
 
@@ -320,5 +471,6 @@ graph TD
 3. **안 쓰는 상태는 들고 있지 마라.** stateless 전환의 핵심 질문은 "우리가 세션을 정말 쓰는가?"였다. 안 썼다. 유지할 이유 없는 상태를 버리니 누수 원인이 통째로 사라졌다(-1,430줄). **누수는 패치가 아니라 구조로 막는다.**
 4. **"부하냐 코드냐"는 정규화해야 갈린다.** MCP를 잡으니 프록시가 나왔다. 다시 튄 OOM이 "사용자가 늘어서"처럼 보였지만, 실은 그 구간 트래픽은 **오히려 40% 줄어 있었다** — 요청당으로 정규화하고 나서야 원인이 부하가 아니라 코드 노출임이 드러났다. 병목은 한 겹 막을 때마다 다음으로 옮겨가고(정상이다), 그때마다 **방아쇠가 어디로 갔는지, 부하 탓인지 코드 탓인지 다시 실측**해야 한다.
 5. **불변인 것만 공유한다.** #929의 교훈. 공유로 성능을 얻되, 동시성 안전이 깨지는 가변 상태(SDK의 transport 소유)는 격리한다. "다 공유"도 "다 격리"도 아닌 경계를 찾는 게 일이다.
+6. **관측 코드도 부하다.** 마지막 OOM은 프록시가 아니라 그 응답을 **로깅하던 미들웨어**가 대형 응답을 3중 복사해 낸 것이었다. 디버깅용 로깅이 정작 관측 대상을 죽였다. 외부 응답 바디를 로그에 통째로 남긴다면 반드시 상한(truncate)을 둔다.
 
-OOM은 한 줄로 잡히지 않았다. 힙 상한이라는 안전망, 세 번의 누수 패치, 구조를 갈아엎는 결단, 그리고 실측으로 그은 방어선 — 이 네 겹이 다 필요했다. 그리고 지금도 마지막 겹(프록시)은 "완벽한 해결"이 아니라 "측정된 안전밸브"다. 그게 1GiB 안에서 살아가는 서버의 현실적인 방어 방식이라고 생각한다.
+OOM은 한 줄로 잡히지 않았다. 힙 상한이라는 안전망, 세 번의 누수 패치, 구조를 갈아엎는 결단, 실측으로 그은 방어선, 그리고 관측 코드가 서버를 죽이던 마지막 구멍까지 — 이 다섯 겹이 다 필요했다. 그리고 지금도 마지막 겹(프록시)은 "완벽한 해결"이 아니라 "측정된 안전밸브"다. 그게 1GiB 안에서 살아가는 서버의 현실적인 방어 방식이라고 생각한다.
