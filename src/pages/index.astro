@@ -12,8 +12,11 @@ const all = (await getCollection('posts', ({ data }) => !data.draft)).sort(
 // 없으면 frontmatter featured, 그것도 없으면 최신 글.
 const pinned = featuredConfig.slug ? all.find((p) => p.id === featuredConfig.slug) : undefined;
 const featured = pinned ?? all.find((p) => p.data.featured) ?? all[0];
-// 최신 글을 맨 앞에 두고, 나머지는 시간 역순 그대로
+// 최상단 글을 맨 앞에 두고, 나머지는 시간 역순 그대로
 const ordered = featured ? [featured, ...all.filter((p) => p.id !== featured.id)] : all;
+// 배지 문구: 최상단이 실제로 최신 글이면 '최신', 의도적으로 고정된 과거 글이면 '고정'.
+// (featured.json 이나 frontmatter 로 과거 글을 올려둔 채 '최신' 이라 적으면 거짓 표기가 된다.)
+const featuredBadge = featured && all[0] && featured.id === all[0].id ? '최신' : '고정';
 const total = all.length;
 
 // 카테고리 + 글 수 (많은 순)
@@ -108,7 +111,7 @@ if (tags.length > 15) {
 
       <div class="posts is-grid" id="posts">
         {ordered.map((post, i) => (
-          <PostCard post={post} index={total - 1 - i} featured={post.id === featured?.id} />
+          <PostCard post={post} index={total - 1 - i} featured={post.id === featured?.id} badge={featuredBadge} />
         ))}
       </div>
       <p class="empty" data-empty hidden>조건에 맞는 글이 없습니다.</p>

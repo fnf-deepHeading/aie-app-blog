@@ -7,8 +7,9 @@ interface Props {
   post: CollectionEntry<'posts'>;
   index?: number; // 아카이브 인덱스 (시간순 일련번호) — 리스트 뷰에서만 표시
   featured?: boolean;
+  badge?: string; // 최상단 카드에 붙는 문구. '최신'(실제 최신 글) 또는 '고정'(의도적으로 올린 과거 글)
 }
-const { post, index, featured = false } = Astro.props;
+const { post, index, featured = false, badge = '최신' } = Astro.props;
 const { title, description, category, pubDate, author, tags } = post.data;
 const mins = readingTime(post.body);
 const num = index !== undefined ? String(index).padStart(2, '0') : null;
@@ -19,7 +20,7 @@ const t = splitTitle(title);
     <div class="card-top">
       {num && <span class="idx mono" aria-hidden="true">{num}</span>}
       <span class="eyebrow">{category}</span>
-      {featured && <span class="latest mono">최신</span>}
+      {featured && <span class="latest mono">{badge}</span>}
     </div>
     <h3 class="card-title">{t.main}{t.sub && <span class="card-subtitle">{t.sub}</span>}</h3>
     <p class="card-desc">{description}</p>
