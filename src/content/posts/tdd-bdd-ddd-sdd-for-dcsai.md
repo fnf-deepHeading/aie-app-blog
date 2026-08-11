@@ -35,12 +35,7 @@ tags: ["Architecture", "AI Native", "Agents"]
 
 ## Red-Green-Refactor 사이클
 
-```
-┌──────────────────────────────────────┐
-│   Red  →  Green  →  Refactor  →  ↺   │
-│  (실패)    (통과)      (개선)         │
-└──────────────────────────────────────┘
-```
+![TDD 사이클 — Write a failing test(실패하는 테스트 작성) → Make the test pass(테스트 통과) → Refactor(리팩토링) → 다시 처음으로 순환하는 원형 다이어그램](https://svc-fnf-dcs-ai-s3.s3.ap-northeast-2.amazonaws.com/aie-app-agent/blog/tdd-sdd/tdd-cycle-3f5c9f5f.png)
 
 **1단계 — Red (테스트 작성 및 실패)**
 - 새 기능을 넣기 전에, 그 요구사항을 만족하는 **실패하는 테스트**를 먼저 쓴다.
