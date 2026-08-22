@@ -97,6 +97,78 @@ const description =
 
     <p class="hint mono" id="hic-hint"></p>
 
+    <!-- 손으로 만져보는 비교 -->
+    <section class="compare" aria-labelledby="cmp-h">
+      <h2 class="notes-h" id="cmp-h">손으로 만져보기 — 같은 카드, 세 가지 방식</h2>
+      <p class="cmp-lead">
+        아래 세 패널은 <strong>내용이 똑같은 카드</strong>다. 만드는 방식만 다르다. 글자를 마우스로
+        드래그해 선택해 보고, 각 패널의 “자세히” 버튼을 눌러 보면 차이가 손으로 느껴진다. 결과는
+        패널 아래 기록에 찍힌다.
+      </p>
+
+      <div class="cmp-grid">
+        <figure class="cmp">
+          <figcaption class="cmp-cap"><span class="cmp-num mono">A</span> DOM (평범한 HTML)</figcaption>
+          <div class="cmp-stage">
+            <div class="mini-card" id="cmp-dom-card">
+              <p class="mini-eyebrow mono">지표</p>
+              <h3 class="mini-h">주간 처리량</h3>
+              <p class="mini-p">지난주 대비 12% 증가했고 목표선 위에서 안정적으로 유지되고 있다.</p>
+              <button type="button" class="mini-btn" id="cmp-dom-btn">자세히</button>
+            </div>
+          </div>
+          <ul class="cmp-facts mono">
+            <li>글자 선택 <b class="ok">O</b></li>
+            <li>버튼 클릭 <b class="ok">O</b></li>
+            <li>줄바꿈 <b class="ok">브라우저</b></li>
+            <li>스크린리더 <b class="ok">읽음</b></li>
+          </ul>
+        </figure>
+
+        <figure class="cmp">
+          <figcaption class="cmp-cap"><span class="cmp-num mono">B</span> 캔버스 + fillText (지금까지의 방법)</figcaption>
+          <div class="cmp-stage">
+            <canvas id="cmp-fill" class="cmp-canvas"></canvas>
+          </div>
+          <ul class="cmp-facts mono">
+            <li>글자 선택 <b class="no">X</b></li>
+            <li>버튼 클릭 <b class="no">좌표만</b></li>
+            <li>줄바꿈 <b class="no">코드가 계산</b></li>
+            <li>스크린리더 <b class="no">못 읽음</b></li>
+          </ul>
+        </figure>
+
+        <figure class="cmp">
+          <figcaption class="cmp-cap"><span class="cmp-num mono">C</span> 캔버스 + drawElementImage (새 API)</figcaption>
+          <div class="cmp-stage">
+            <canvas id="cmp-draw" class="cmp-canvas" layoutsubtree>
+              <div class="mini-card" id="cmp-draw-card">
+                <p class="mini-eyebrow mono">지표</p>
+                <h3 class="mini-h">주간 처리량</h3>
+                <p class="mini-p">지난주 대비 12% 증가했고 목표선 위에서 안정적으로 유지되고 있다.</p>
+                <button type="button" class="mini-btn" id="cmp-draw-btn">자세히</button>
+              </div>
+            </canvas>
+            <p class="cmp-empty" id="cmp-draw-empty" hidden><span>
+              이 브라우저에서는 이 패널을 그릴 수 없다. 캔버스 자식은 그려질 때까지 보이지 않으므로,
+              지원 없이 이 방식만 쓰면 <strong>화면이 이렇게 빈다.</strong>
+            </span></p>
+          </div>
+          <ul class="cmp-facts mono" id="cmp-draw-facts">
+            <li>글자 선택 <b class="no">X (픽셀)</b></li>
+            <li>버튼 클릭 <b id="cmp-draw-hit">?</b></li>
+            <li>줄바꿈 <b class="ok">브라우저</b></li>
+            <li>스크린리더 <b class="ok">읽음(원본 DOM)</b></li>
+          </ul>
+        </figure>
+      </div>
+
+      <div class="cmp-readout">
+        <p><span class="mono">드래그로 선택된 텍스트</span> <span id="cmp-sel">(없음)</span></p>
+        <p><span class="mono">버튼 클릭 기록</span> <span id="cmp-log">(아직 없음)</span></p>
+      </div>
+    </section>
+
     <div class="notes">
       <h2 class="notes-h">더 자세히</h2>
       <ul class="notes-list">
@@ -429,6 +501,207 @@ const description =
     syncOutputs();
     requestPaint();
   }
+
+  // ── 비교 패널: 같은 카드를 (A) DOM (B) fillText (C) drawElementImage 로 ──────
+  (function compare() {
+    const domBtn = document.getElementById('cmp-dom-btn');
+    const fillCv = document.getElementById('cmp-fill');
+    const drawCv = document.getElementById('cmp-draw');
+    const drawCard = document.getElementById('cmp-draw-card');
+    const drawBtn = document.getElementById('cmp-draw-btn');
+    const drawEmpty = document.getElementById('cmp-draw-empty');
+    const drawHit = document.getElementById('cmp-draw-hit');
+    const selOut = document.getElementById('cmp-sel');
+    const logOut = document.getElementById('cmp-log');
+    if (!domBtn || !fillCv || !drawCv) return;
+
+    const css = getComputedStyle(document.documentElement);
+    const tok = (n, fb) => (css.getPropertyValue(n) || fb).trim() || fb;
+    const COL = {
+      paper2: tok('--paper-2', '#FFFFFF'),
+      ink: tok('--ink', '#211E29'),
+      ink2: tok('--ink-2', '#585563'),
+      ink3: tok('--ink-3', '#918DA0'),
+      clay: tok('--clay', '#B090F0'),
+      clay2: tok('--clay-2', '#7A57D1'),
+      line: tok('--line', '#E7E5EE'),
+      line2: tok('--line-2', '#D7D3E2'),
+    };
+
+    let clicks = 0;
+    function log(msg) {
+      clicks++;
+      logOut.textContent = '#' + clicks + ' ' + msg;
+    }
+
+    // 선택된 텍스트를 그대로 보여준다 — 캔버스 위에서 드래그하면 아무것도 안 잡힌다
+    document.addEventListener('selectionchange', () => {
+      const t = (window.getSelection() ? window.getSelection().toString() : '').trim();
+      selOut.textContent = t ? '“' + t.slice(0, 60) + (t.length > 60 ? '…' : '') + '”' : '(없음)';
+    });
+
+    // (A) DOM — 그냥 버튼이다
+    domBtn.addEventListener('click', () => log('A(DOM) — 버튼이 클릭을 직접 받았다.'));
+
+    // 캔버스 그리드를 기기 픽셀에 맞춘다
+    function fit(cv) {
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, Math.round(cv.clientWidth * dpr));
+      const h = Math.max(1, Math.round(cv.clientHeight * dpr));
+      if (cv.width !== w || cv.height !== h) {
+        cv.width = w;
+        cv.height = h;
+      }
+      return cv.width / Math.max(1, cv.clientWidth);
+    }
+
+    // (B) fillText — 카드 모양을 손으로 그린다. 줄바꿈도 손으로 자른다.
+    const CARD = { x: 16, y: 14, w: 210, h: 158 };
+    const BTN = { x: 16 + 14, y: 14 + 114, w: 60, h: 27 }; // 그린 버튼의 사각형 — 히트테스트용
+    function box(c, x, y, w, h, r) {
+      if (c.roundRect) {
+        c.beginPath();
+        c.roundRect(x, y, w, h, r);
+      } else {
+        c.beginPath();
+        c.rect(x, y, w, h);
+      }
+    }
+    // 흔한 나이브 줄바꿈: 폭이 넘치면 글자 단위로 끊는다(= 어절 중간이 쪼개진다)
+    function wrapChars(c, text, maxW) {
+      const lines = [];
+      let line = '';
+      for (const ch of text) {
+        if (c.measureText(line + ch).width > maxW && line) {
+          lines.push(line);
+          line = ch;
+        } else {
+          line += ch;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+    function drawFill() {
+      const c = fillCv.getContext('2d');
+      const grid = fit(fillCv);
+      c.reset();
+      c.scale(grid, grid);
+      c.fillStyle = COL.paper2;
+      c.fillRect(0, 0, fillCv.width / grid, fillCv.height / grid);
+
+      box(c, CARD.x, CARD.y, CARD.w, CARD.h, 4);
+      c.fillStyle = COL.paper2;
+      c.fill();
+      c.strokeStyle = COL.clay;
+      c.lineWidth = 1;
+      c.stroke();
+
+      const px = CARD.x + 14;
+      c.textBaseline = 'alphabetic';
+      c.fillStyle = COL.clay2;
+      c.font = '500 10px "JetBrains Mono", monospace';
+      c.fillText('지표', px, CARD.y + 24);
+
+      c.fillStyle = COL.ink;
+      c.font = '400 20px Newsreader, "Gowun Batang", Georgia, serif';
+      c.fillText('주간 처리량', px, CARD.y + 50);
+
+      c.fillStyle = COL.ink2;
+      c.font = '12.5px Pretendard, system-ui, sans-serif';
+      const lines = wrapChars(c, '지난주 대비 12% 증가했고 목표선 위에서 안정적으로 유지되고 있다.', CARD.w - 28);
+      lines.slice(0, 3).forEach((ln, i) => c.fillText(ln, px, CARD.y + 71 + i * 17));
+
+      // "버튼" — 사각형과 글자일 뿐이다
+      box(c, BTN.x, BTN.y, BTN.w, BTN.h, 4);
+      c.fillStyle = COL.paper2;
+      c.fill();
+      c.strokeStyle = COL.line2;
+      c.stroke();
+      c.fillStyle = COL.ink;
+      c.font = '500 11px "JetBrains Mono", monospace';
+      c.fillText('자세히', BTN.x + 10, BTN.y + 18);
+    }
+    // 캔버스는 클릭 좌표만 준다 → 버튼 안인지는 내가 계산해야 한다
+    fillCv.addEventListener('click', (e) => {
+      const r = fillCv.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      const inside =
+        x >= BTN.x && x <= BTN.x + BTN.w && y >= BTN.y && y <= BTN.y + BTN.h;
+      log(
+        'B(fillText) — 좌표 (' +
+          Math.round(x) +
+          ', ' +
+          Math.round(y) +
+          ') 만 도착. 직접 계산해보니 버튼 ' +
+          (inside ? '안이다.' : '밖이다.'),
+      );
+    });
+
+    // (C) drawElementImage — 지원 브라우저에서만 그릴 수 있다
+    let childGotClick = false;
+    if (supported) {
+      const c = drawCv.getContext('2d');
+      const draw = () => {
+        const grid = fit(drawCv);
+        const cw = drawCard.offsetWidth;
+        const ch = drawCard.offsetHeight;
+        c.reset();
+        c.save();
+        c.scale(grid, grid);
+        c.fillStyle = COL.paper2;
+        c.fillRect(0, 0, drawCv.width / grid, drawCv.height / grid);
+        c.restore();
+        const M = new DOMMatrix().translateSelf(CARD.x, CARD.y);
+        c.setTransform(new DOMMatrix().scaleSelf(grid, grid).multiplySelf(M));
+        let returned;
+        try {
+          returned = hasNew
+            ? c.drawElementImage(drawCard, 0, 0, cw, ch)
+            : c.drawElement(drawCard, 0, 0, cw, ch);
+        } catch (err) {
+          return;
+        }
+        drawCard.style.transformOrigin = '0 0';
+        drawCard.style.transform = (returned || M).toString();
+      };
+      if (hasPaintEvent) drawCv.addEventListener('paint', draw);
+      const kick = () => {
+        if (hasRequestPaint) drawCv.requestPaint();
+        else requestAnimationFrame(draw);
+      };
+      kick();
+      window.addEventListener('resize', kick);
+      // 캔버스 안의 '진짜 버튼'이 클릭을 받는지 확인한다
+      drawBtn.addEventListener('click', () => {
+        childGotClick = true;
+        drawHit.textContent = 'O (닿는다)';
+        drawHit.className = 'ok';
+        log('C(drawElementImage) — 캔버스 안의 진짜 버튼이 클릭을 받았다.');
+      });
+      drawCv.addEventListener('click', () => {
+        if (childGotClick) {
+          childGotClick = false;
+          return; // 버블링으로 올라온 것 — 이미 기록했다
+        }
+        drawHit.textContent = 'X (이 빌드에선 안 닿음)';
+        drawHit.className = 'no';
+        log('C(drawElementImage) — 포인터가 캔버스까지만 도착했다. 자식 버튼엔 닿지 않았다.');
+      });
+    } else {
+      // 지원하지 않으면 자식은 영원히 안 보인다 → 그 상태를 그대로 보여준다
+      drawCv.hidden = true;
+      drawEmpty.hidden = false;
+      drawHit.textContent = '— (그릴 수 없음)';
+      if (drawCard.parentElement === drawCv) drawCv.removeChild(drawCard);
+    }
+
+    drawFill();
+    window.addEventListener('resize', drawFill);
+    // 웹폰트가 늦게 오면 (B) 는 다시 그려야 한다 — 캔버스는 자동 갱신이 없다
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawFill);
+  })();
 </script>
 
 <style>
@@ -701,6 +974,129 @@ const description =
   .notes-list strong { color: var(--ink); }
   .notes-more { margin-top: 1.2rem; font-size: var(--fs-sm); color: var(--ink-2); }
   .notes-more a { color: var(--clay-2); text-decoration: underline; text-underline-offset: 2px; }
+
+
+  /* 비교 패널 */
+  .compare { margin-top: 2.5rem; border-top: 1px solid var(--line); padding-top: 1.5rem; }
+  .cmp-lead {
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    max-width: var(--measure-text);
+    margin-bottom: 1.25rem;
+  }
+  .cmp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.1rem;
+  }
+  .cmp { display: grid; gap: 0.5rem; }
+  .cmp-cap {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: var(--fs-xs);
+    color: var(--ink-2);
+    line-height: 1.4;
+  }
+  .cmp-num {
+    display: inline-grid;
+    place-items: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    border: 1px solid var(--clay);
+    color: var(--clay-2);
+    border-radius: 999px;
+    font-size: var(--fs-xs);
+    flex: none;
+  }
+  .cmp-stage {
+    position: relative;
+    height: 190px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    overflow: hidden;
+  }
+  .cmp-canvas[hidden] { display: none; }
+  .cmp-canvas { display: block; width: 100%; height: 100%; }
+  /* [hidden] 은 display 를 이기지 못한다 — 클래스 규칙마다 명시적으로 꺼 준다.
+     (안 하면 '안 보이는' 안내문이 캔버스 위를 덮어 클릭을 모두 삼킨다) */
+  .cmp-empty[hidden] { display: none; }
+  .cmp-empty {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    /* 텍스트를 span 하나로 감싸 두었다 — grid 컨테이너에 맨 텍스트 노드를 두면 쪼개진다 */
+    display: grid;
+    align-content: center;
+    padding: 1rem;
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+    background: repeating-linear-gradient(45deg, var(--paper-2) 0 8px, var(--paper) 8px 16px);
+  }
+  .cmp-empty strong { color: var(--ink-2); }
+  .cmp-facts {
+    display: grid;
+    gap: 0.1rem;
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+  }
+  .cmp-facts li {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    border-top: 1px solid var(--line);
+    padding: 0.22rem 0;
+  }
+  .cmp-facts b { font-weight: 500; }
+  .cmp-facts .ok { color: var(--clay-2); }
+  .cmp-facts .no { color: var(--ink-2); }
+  .cmp-readout {
+    margin-top: 1.1rem;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--clay);
+    border-radius: var(--radius);
+    background: var(--paper-2);
+    padding: 0.8rem 1rem;
+    display: grid;
+    gap: 0.35rem;
+    font-size: var(--fs-sm);
+    color: var(--ink);
+  }
+  .cmp-readout .mono { color: var(--ink-3); margin-right: 0.4rem; }
+
+  /* 세 패널에 공통으로 쓰는 작은 카드 */
+  .mini-card {
+    position: absolute;
+    left: 16px;
+    top: 14px;
+    width: 210px;
+    background: var(--paper-2);
+    border: 1px solid var(--clay);
+    border-radius: var(--radius);
+    padding: 0.75rem 0.85rem 0.85rem;
+  }
+  .mini-eyebrow { font-size: 10px; letter-spacing: 0.1em; color: var(--clay-2); }
+  .mini-h {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.15;
+    margin: 0.2rem 0 0.35rem;
+  }
+  .mini-p { font-size: 12.5px; line-height: 1.36; color: var(--ink-2); }
+  .mini-btn {
+    margin-top: 0.6rem;
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid var(--line-2);
+    background: var(--paper-2);
+    color: var(--ink);
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+  .mini-btn:hover { border-color: var(--clay); color: var(--clay-2); }
 
   @media (max-width: 640px) {
     .hic-canvas, .fallback-stage { height: 400px; }
