@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 
 const title = 'HTML in Canvas 실험실';
 const description =
-  'Chrome의 HTML-in-Canvas API(layoutsubtree + drawElement/drawElementImage)를 실제로 그려보는 데모. 지원하지 않는 브라우저에서는 같은 DOM을 그대로 보여주는 폴백으로 떨어진다.';
+  'Chrome의 HTML-in-Canvas API(layoutsubtree + drawElement/drawElementImage)를 실제로 그려보는 데모. 지원하지 않는 브라우저에서는 같은 DOM을 CSS로 흉내낸 폴백으로 떨어진다.';
 ---
 
 <Base title={title} description={description}>
@@ -11,20 +11,45 @@ const description =
     <p class="eyebrow">LAB</p>
     <h1 class="lab-title">
       HTML in Canvas
-      <span class="lab-sub">DOM 한 덩어리를 캔버스 안에 그려보는 데모</span>
+      <span class="lab-sub">HTML 조각을 캔버스 안에 도장처럼 찍는 실험</span>
     </h1>
-    <p class="lab-lead">
-      아래 카드는 <code>&lt;canvas&gt;</code>의 <strong>자식 DOM 요소</strong>다. 캔버스가
-      <code>layoutsubtree</code> 로 자식을 레이아웃에 참여시키고, 2D 컨텍스트의
-      <code>drawElement()</code>(최신 이름 <code>drawElementImage()</code>)로 그 요소를
-      캔버스 좌표계에 그린다. 텍스트 줄바꿈·폰트·굵기·인풋 위젯은 전부 브라우저 레이아웃 엔진이
-      계산한 것이고, 회전과 배경 격자는 캔버스가 그린 것이다.
-    </p>
 
-    <!-- 감지 결과 패널 -->
+    <!-- 한 눈에: 이게 뭔지 -->
+    <div class="primer">
+      <h2 class="primer-h">30초 요약 — 이게 뭔가</h2>
+      <ol class="primer-list">
+        <li>
+          <strong>캔버스는 원래 그림판이다.</strong> 글자를 넣으려면 <code>fillText()</code>로 좌표를
+          찍어 한 줄씩 그려야 했다. 줄바꿈·한글 폭 계산은 개발자 몫이고, 스크린리더는 그 안을 못 읽는다.
+        </li>
+        <li>
+          <strong>새 API는 “이미 만든 HTML을 캔버스에 찍는다”.</strong> 카드 하나를 평소처럼 HTML로
+          만들어 두고 <code>drawElementImage(카드, x, y)</code> 한 줄로 캔버스에 그린다. 줄바꿈·폰트·
+          인풋 위젯은 브라우저가 계산한 그대로 들어간다.
+        </li>
+        <li>
+          <strong>그래서 뭐가 좋은가.</strong> 캔버스만 할 수 있는 일(회전·3D·셰이더·이미지 내보내기)을
+          <em>진짜 HTML</em> 위에 얹을 수 있다. 차트 축·범례 같은 “캔버스 안의 글자”, 3D 씬 속 UI 패널이
+          1차 후보다.
+        </li>
+        <li>
+          <strong>아직 실험 단계다.</strong> 크롬만 구현했고, 플래그나 오리진 트라이얼이 필요하다. 그래서
+          이 페이지는 <em>지원하는 브라우저</em>와 <em>아닌 브라우저</em>를 나눠서 보여준다.
+        </li>
+      </ol>
+    </div>
+
+    <!-- 지금 이 브라우저 상태 -->
     <div class="status" id="hic-status" data-state="checking">
-      <p class="status-line" id="hic-status-line">지원 여부 확인 중…</p>
-      <ul class="probe" id="hic-probe"></ul>
+      <p class="status-head">
+        <span class="chip mono" id="hic-chip">확인 중…</span>
+        <span class="status-line" id="hic-status-line">지원 여부를 확인하고 있다.</span>
+      </p>
+      <p class="status-why" id="hic-status-why"></p>
+      <details class="probe-wrap">
+        <summary class="mono">감지한 심볼 보기</summary>
+        <ul class="probe" id="hic-probe"></ul>
+      </details>
     </div>
 
     <!-- 스테이지 -->
@@ -47,6 +72,7 @@ const description =
       </canvas>
       <!-- 폴백일 때 위 카드를 여기로 옮겨 DOM 그대로 보여준다 -->
       <div class="fallback-stage" id="hic-fallback" hidden></div>
+      <p class="stage-cap" id="hic-stage-cap"></p>
     </div>
 
     <!-- 컨트롤 -->
@@ -64,7 +90,7 @@ const description =
         <input id="hic-text" type="text" value="캔버스 안의 문단" />
       </label>
       <div class="ctrl ctrl-btns">
-        <button type="button" id="hic-focus" class="mono">캔버스 속 인풋에 포커스</button>
+        <button type="button" id="hic-focus" class="mono">카드 속 인풋에 포커스</button>
         <button type="button" id="hic-spin" class="mono" aria-pressed="false">흔들기</button>
       </div>
     </div>
@@ -72,31 +98,37 @@ const description =
     <p class="hint mono" id="hic-hint"></p>
 
     <div class="notes">
-      <h2 class="notes-h">읽는 법</h2>
+      <h2 class="notes-h">더 자세히</h2>
       <ul class="notes-list">
         <li>
-          <strong>지원 브라우저</strong> — Chrome Canary에서
-          <code>chrome://flags/#canvas-draw-element</code> 를 켜면 개발자 트라이얼로 동작한다
-          (Chrome 138+). 오리진 트라이얼은 148~150(연장 154)이며, 이 구간의 빌드는
-          <code>drawElementImage()</code>·<code>paint</code> 이벤트·<code>requestPaint()</code>를 쓴다.
+          <strong>켜서 보는 방법</strong> — Chrome Canary에서
+          <code>chrome://flags/#canvas-draw-element</code> 를 Enabled 로 바꾸고 재시작한 뒤 이 페이지를
+          열면 카드가 <em>캔버스 픽셀</em>로 그려진다(Chrome 138+). 오리진 트라이얼은 148~150(연장 154)
+          구간이고, 그 빌드는 <code>drawElementImage()</code>·<code>paint</code> 이벤트·
+          <code>requestPaint()</code>를 쓴다.
         </li>
         <li>
-          <strong>구형 이름</strong> — 조금 이전 빌드(예: Chromium 141)에는
+          <strong>이름이 바뀌는 중</strong> — 조금 이전 빌드(예: Chromium 141)에는
           <code>ctx.drawElement()</code>만 있고 <code>paint</code> 이벤트가 없다. 이 페이지는 둘 다
-          감지해서 있는 쪽을 쓰고, <code>paint</code>가 없으면
-          <code>requestAnimationFrame</code>으로 대신 그린다.
+          감지해 있는 쪽을 쓰고, <code>paint</code>가 없으면 <code>requestAnimationFrame</code>으로
+          대신 그린다.
         </li>
         <li>
-          <strong>폴백</strong> — 두 API가 다 없으면 카드를 캔버스 밖으로 옮겨 평범한 DOM으로
-          보여준다. 캔버스 자식은 지원 브라우저에서 화면에 나타나지 않으므로, 폴백은
-          "그리기 실패"가 아니라 "DOM을 원래 자리로 되돌리기"로 짜야 한다.
+          <strong>폴백이 왜 필요한가</strong> — 캔버스의 자식 요소는 <em>그려질 때까지 화면에 보이지
+          않는다.</em> 그래서 지원 안 하는 브라우저에서 폴백을 안 짜면 화면이 조용히 빈다. 이 페이지의
+          폴백은 카드를 캔버스 밖으로 옮겨 평범한 DOM으로 보여주고, 슬라이더는 CSS transform 으로
+          같은 움직임을 흉내낸다(캔버스에 그린 게 아니다).
         </li>
         <li>
           <strong>해상도</strong> — 캔버스 그리드를 기기 픽셀에 맞추고
-          (<code>device-pixel-content-box</code>), CTM을 CSS→그리드 배율만큼 <code>scale()</code>해서
-          그린다. 이 보정을 빼면 고DPI 화면에서 요소가 작게 그려진다.
+          (<code>device-pixel-content-box</code>), CTM을 CSS→그리드 배율만큼 <code>scale()</code>하고
+          목적지 크기를 명시해서 그린다. 이 보정을 빼면 고DPI 화면에서 작게·흐리게 그려진다.
         </li>
       </ul>
+      <p class="notes-more">
+        재본 것과 판단은 글에 정리했다 —
+        <a href="../../posts/html-in-canvas-drawelement/">캔버스 안의 HTML</a>.
+      </p>
     </div>
   </section>
 </Base>
@@ -106,15 +138,28 @@ const description =
   // 세 갈래로 갈린다.
   //   (1) drawElementImage + paint 이벤트  — 오리진 트라이얼(148~) 빌드
   //   (2) drawElement (반환값 없음)         — 개발자 트라이얼(138~) 플래그 빌드
-  //   (3) 둘 다 없음                        — DOM 폴백
+  //   (3) 둘 다 없음                        — DOM 폴백(슬라이더는 CSS transform 으로 흉내)
   const canvas = document.getElementById('hic-canvas');
   const card = document.getElementById('hic-card');
   const fallback = document.getElementById('hic-fallback');
   const statusBox = document.getElementById('hic-status');
   const statusLine = document.getElementById('hic-status-line');
+  const statusWhy = document.getElementById('hic-status-why');
+  const chip = document.getElementById('hic-chip');
   const probeList = document.getElementById('hic-probe');
+  const stageCap = document.getElementById('hic-stage-cap');
   const hint = document.getElementById('hic-hint');
   const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+
+  const angleEl = document.getElementById('hic-angle');
+  const scaleEl = document.getElementById('hic-scale');
+  const textEl = document.getElementById('hic-text');
+  const angleOut = document.getElementById('hic-angle-out');
+  const scaleOut = document.getElementById('hic-scale-out');
+  const cardH = document.getElementById('hic-card-h');
+  const input = document.getElementById('hic-input');
+  const focusBtn = document.getElementById('hic-focus');
+  const spinBtn = document.getElementById('hic-spin');
 
   const c2d = window.CanvasRenderingContext2D ? CanvasRenderingContext2D.prototype : {};
   const cvp = HTMLCanvasElement.prototype;
@@ -125,7 +170,12 @@ const description =
   const hasRequestPaint = 'requestPaint' in cvp;
   const supported = !!ctx && hasLayoutSubtree && (hasNew || hasOld);
 
-  // 감지 결과를 그대로 노출한다 — 이 페이지의 절반은 이 표다.
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let spinning = false;
+  let t0 = 0;
+  let queued = false;
+
+  // 감지 결과를 그대로 노출한다
   probeList.innerHTML = [
     ['canvas.layoutSubtree', hasLayoutSubtree],
     ['ctx.drawElementImage', hasNew],
@@ -145,47 +195,86 @@ const description =
     )
     .join('');
 
+  function readControls() {
+    return { angle: Number(angleEl.value), scale: Number(scaleEl.value) };
+  }
+  function syncOutputs() {
+    angleOut.value = angleEl.value + '°';
+    scaleOut.value = Number(scaleEl.value).toFixed(2) + '×';
+  }
+  function wobble(now) {
+    return spinning && !reduceMotion ? Math.sin(((now || 0) - t0) / 520) * 6 : 0;
+  }
+
   if (!supported) {
-    // ── 폴백: 캔버스 자식은 지원 브라우저에서만 보이므로 DOM 자리로 되돌린다
+    // ── 폴백 ────────────────────────────────────────────────────────────
+    // 캔버스 자식은 지원 브라우저에서만 보이므로, DOM 자리로 되돌린다.
+    // 슬라이더는 죽이지 않고 CSS transform 으로 같은 움직임을 흉내낸다 — 다만
+    // "캔버스에 그린 게 아니다"를 화면에 분명히 적는다.
     statusBox.dataset.state = 'unsupported';
-    statusLine.textContent =
-      '이 브라우저에는 HTML-in-Canvas API가 없다 → 같은 DOM을 캔버스 밖에서 그대로 렌더한다.';
+    chip.textContent = '폴백';
+    statusLine.textContent = '이 브라우저에는 HTML-in-Canvas API가 없다.';
+    statusWhy.innerHTML =
+      '아래 카드는 <strong>캔버스 밖의 평범한 HTML</strong>이다(마우스로 글자 선택도 된다). ' +
+      '회전·배율 슬라이더는 CSS transform 으로 <em>비슷하게 흉내낸 것</em>이지, 캔버스에 그린 게 아니다. ' +
+      '실제 API로 그려진 화면을 보려면 Chrome Canary 에서 <code>chrome://flags/#canvas-draw-element</code> 를 켜고 다시 열면 된다.';
     canvas.hidden = true;
     fallback.hidden = false;
     fallback.appendChild(card);
-    card.style.transform = 'none';
-    hint.textContent =
-      'Chrome Canary + chrome://flags/#canvas-draw-element 를 켜면 이 카드가 캔버스 픽셀로 그려진다.';
-    // 회전·배율은 캔버스 좌표계 얘기라 폴백에선 의미가 없다 → 잠근다.
-    // 헤드라인 입력은 그대로 살려 둔다(같은 DOM 이므로 그냥 반영된다).
-    for (const id of ['hic-focus', 'hic-spin', 'hic-angle', 'hic-scale']) {
-      document.getElementById(id).disabled = true;
+    card.style.transformOrigin = '50% 50%';
+    stageCap.textContent = '↑ 캔버스 밖 DOM (CSS transform 으로 흉내낸 상태)';
+
+    function renderFallback(now) {
+      queued = false;
+      const { angle, scale } = readControls();
+      card.style.transform = 'rotate(' + (angle + wobble(now)) + 'deg) scale(' + scale + ')';
+      if (spinning && !reduceMotion) schedule();
     }
-    const fbText = document.getElementById('hic-text');
-    const fbH = document.getElementById('hic-card-h');
-    fbText.addEventListener('input', () => {
-      fbH.textContent = fbText.value || ' ';
+    function schedule() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(renderFallback);
+    }
+
+    angleEl.addEventListener('input', () => {
+      syncOutputs();
+      schedule();
     });
+    scaleEl.addEventListener('input', () => {
+      syncOutputs();
+      schedule();
+    });
+    textEl.addEventListener('input', () => {
+      cardH.textContent = textEl.value || ' ';
+    });
+    focusBtn.addEventListener('click', () => {
+      input.focus();
+      input.select();
+      hint.textContent = '폴백에서는 카드가 그냥 DOM이라 클릭으로도 포커스된다.';
+    });
+    spinBtn.addEventListener('click', () => {
+      if (reduceMotion) {
+        hint.textContent = 'prefers-reduced-motion 이 켜져 있어 애니메이션은 생략한다.';
+        return;
+      }
+      spinning = !spinning;
+      spinBtn.setAttribute('aria-pressed', String(spinning));
+      t0 = performance.now();
+      schedule();
+    });
+    syncOutputs();
+    schedule();
   } else {
+    // ── 지원 경로 ───────────────────────────────────────────────────────
     statusBox.dataset.state = 'supported';
+    chip.textContent = '그리는 중';
     statusLine.textContent = hasNew
       ? 'drawElementImage() + paint 이벤트로 그린다.'
-      : 'drawElement() 로 그린다 (paint 이벤트 없음 → requestAnimationFrame 으로 대체).';
-
-    const angleEl = document.getElementById('hic-angle');
-    const scaleEl = document.getElementById('hic-scale');
-    const textEl = document.getElementById('hic-text');
-    const angleOut = document.getElementById('hic-angle-out');
-    const scaleOut = document.getElementById('hic-scale-out');
-    const cardH = document.getElementById('hic-card-h');
-    const input = document.getElementById('hic-input');
-    const focusBtn = document.getElementById('hic-focus');
-    const spinBtn = document.getElementById('hic-spin');
-
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let spinning = false;
-    let t0 = 0;
-    let queued = false;
+      : 'drawElement() 로 그린다 (paint 이벤트가 없어 requestAnimationFrame 으로 대체).';
+    statusWhy.innerHTML =
+      '아래 카드는 <strong>캔버스에 그려진 픽셀</strong>이다. 슬라이더를 움직이면 캔버스 좌표계 변환이 ' +
+      '바뀌고, 헤드라인을 고치면 DOM 변경이 다음 프레임에 캔버스로 들어온다. 배경 격자는 캔버스가 직접 그린 것이다.';
+    stageCap.textContent = '↑ 캔버스 픽셀 (카드 = 캔버스의 자식 DOM, 격자 = 캔버스 드로잉)';
 
     // 캔버스 그리드를 기기 픽셀에 맞춘다 (안 맞추면 흐려진다)
     function sizeCanvasFromCss() {
@@ -251,9 +340,7 @@ const description =
     function drawFrame(now) {
       queued = false;
       const grid = canvas.width / Math.max(1, canvas.clientWidth); // CSS px → grid px
-      const wobble = spinning && !reduceMotion ? Math.sin(((now || 0) - t0) / 520) * 6 : 0;
-      const angle = Number(angleEl.value) + wobble;
-      const scale = Number(scaleEl.value);
+      const { angle, scale } = readControls();
 
       ctx.reset();
       backdrop(grid);
@@ -263,7 +350,7 @@ const description =
       const ch = card.offsetHeight;
       const cssM = new DOMMatrix()
         .translateSelf(canvas.clientWidth / 2, canvas.clientHeight / 2)
-        .rotateSelf(angle)
+        .rotateSelf(angle + wobble(now))
         .scaleSelf(scale)
         .translateSelf(-cw / 2, -ch / 2);
 
@@ -279,6 +366,7 @@ const description =
           : ctx.drawElement(card, 0, 0, cw, ch);
       } catch (err) {
         statusBox.dataset.state = 'error';
+        chip.textContent = '오류';
         statusLine.textContent = '그리기 실패: ' + err.message;
         return;
       }
@@ -309,14 +397,14 @@ const description =
       });
     }
 
-    // 컨트롤 — 값이 바뀌면 다시 그린다
-    function bump() {
-      angleOut.value = angleEl.value + '°';
-      scaleOut.value = Number(scaleEl.value).toFixed(2) + '×';
+    angleEl.addEventListener('input', () => {
+      syncOutputs();
       requestPaint();
-    }
-    angleEl.addEventListener('input', bump);
-    scaleEl.addEventListener('input', bump);
+    });
+    scaleEl.addEventListener('input', () => {
+      syncOutputs();
+      requestPaint();
+    });
     textEl.addEventListener('input', () => {
       cardH.textContent = textEl.value || ' ';
       requestPaint();
@@ -325,7 +413,7 @@ const description =
     focusBtn.addEventListener('click', () => {
       input.focus();
       input.select();
-      hint.textContent = '포커스가 캔버스 안 인풋에 있다 — 타이핑하면 픽셀이 갱신된다.';
+      hint.textContent = '포커스가 캔버스 안 인풋에 있다 — 타이핑하면 캔버스 픽셀이 갱신된다.';
     });
     input.addEventListener('input', () => requestPaint());
     spinBtn.addEventListener('click', () => {
@@ -338,7 +426,8 @@ const description =
       t0 = performance.now();
       requestPaint();
     });
-    bump();
+    syncOutputs();
+    requestPaint();
   }
 </script>
 
@@ -361,11 +450,6 @@ const description =
     color: var(--ink-2);
     margin-top: 0.4rem;
   }
-  .lab-lead {
-    color: var(--ink-2);
-    max-width: var(--measure-text);
-    margin-bottom: 2rem;
-  }
   .lab code {
     font-family: var(--mono);
     font-size: 0.86em;
@@ -374,7 +458,46 @@ const description =
     border-radius: 3px;
   }
 
-  /* 감지 결과 */
+  /* 30초 요약 */
+  .primer {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 1.25rem 0 1.4rem;
+    margin-bottom: 1.75rem;
+    max-width: var(--measure-text);
+  }
+  .primer-h {
+    font-family: var(--mono);
+    font-size: var(--fs-xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--clay-2);
+    font-weight: 500;
+    margin-bottom: 0.9rem;
+  }
+  .primer-list { display: grid; gap: 0.7rem; counter-reset: p; }
+  /* li 를 grid 로 만들면 텍스트 노드까지 그리드 아이템이 되어 한 글자씩 쪼개진다.
+     번호는 절대배치로 붙이고 본문은 평범한 인라인 흐름으로 둔다. */
+  .primer-list li {
+    position: relative;
+    padding-left: 2rem;
+    font-size: var(--fs-sm);
+    color: var(--ink-2);
+    line-height: 1.6;
+    counter-increment: p;
+  }
+  .primer-list li::before {
+    content: counter(p, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.2rem;
+    font-family: var(--mono);
+    font-size: var(--fs-xs);
+    color: var(--clay);
+  }
+  .primer-list strong { color: var(--ink); }
+
+  /* 상태 패널 */
   .status {
     border: 1px solid var(--line);
     border-left: 3px solid var(--clay);
@@ -385,13 +508,44 @@ const description =
   }
   .status[data-state='unsupported'] { border-left-color: var(--ink-3); }
   .status[data-state='error'] { border-left-color: #c0392b; }
-  .status-line {
+  .status-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .chip {
+    display: inline-block;
+    border: 1px solid var(--clay);
+    background: var(--clay-wash);
+    color: var(--clay-2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-size: var(--fs-xs);
+    white-space: nowrap;
+  }
+  .status[data-state='unsupported'] .chip {
+    border-color: var(--line-2);
+    background: var(--paper-3);
+    color: var(--ink-2);
+  }
+  .status-line { font-size: var(--fs-sm); color: var(--ink); }
+  .status-why {
+    margin-top: 0.55rem;
     font-size: var(--fs-sm);
-    color: var(--ink);
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+  .status-why strong { color: var(--ink); }
+  .probe-wrap { margin-top: 0.8rem; }
+  .probe-wrap summary {
+    cursor: pointer;
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
   }
   /* 아래 목록은 스크립트가 innerHTML 로 채우므로 스코프드 선택자가 닿지 않는다 → :global() */
   .probe {
-    margin-top: 0.75rem;
+    margin-top: 0.6rem;
     display: grid;
     gap: 0.15rem;
     font-family: var(--mono);
@@ -411,6 +565,12 @@ const description =
 
   /* 스테이지 */
   .stage { margin-bottom: 1.25rem; }
+  .stage-cap {
+    margin-top: 0.5rem;
+    font-family: var(--mono);
+    font-size: var(--fs-xs);
+    color: var(--ink-3);
+  }
   .hic-canvas[hidden] { display: none; }
   .hic-canvas {
     display: block;
@@ -424,15 +584,21 @@ const description =
   .fallback-stage {
     border: 1px dashed var(--line-2);
     border-radius: var(--radius);
-    background: var(--paper-2);
-    padding: 1.5rem;
+    /* 지원 경로의 캔버스 격자와 눈으로 비교되도록 같은 격자를 CSS 로 깐다 */
+    background:
+      linear-gradient(to right, #EFECF7 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(to bottom, #EFECF7 1px, transparent 1px) 0 0 / 24px 24px,
+      var(--paper-2);
+    height: 340px;
     display: flex;
+    align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
 
   /* 캔버스에 그려질 카드 (= 캔버스의 직계 자식) */
   .card {
-    transform-origin: 0 0; /* 동기화 변환 계산을 단순하게 유지 */
+    transform-origin: 0 0; /* 동기화 변환 계산을 단순하게 유지 (폴백에서는 중앙으로 바꿈) */
     width: 340px;
     background: var(--paper-2);
     border: 1px solid var(--clay);
@@ -533,9 +699,11 @@ const description =
   }
   .notes-list { display: grid; gap: 0.8rem; font-size: var(--fs-sm); color: var(--ink-2); }
   .notes-list strong { color: var(--ink); }
+  .notes-more { margin-top: 1.2rem; font-size: var(--fs-sm); color: var(--ink-2); }
+  .notes-more a { color: var(--clay-2); text-decoration: underline; text-underline-offset: 2px; }
 
   @media (max-width: 640px) {
-    .hic-canvas { height: 400px; }
+    .hic-canvas, .fallback-stage { height: 400px; }
     .card { width: 280px; }
   }
 </style>
