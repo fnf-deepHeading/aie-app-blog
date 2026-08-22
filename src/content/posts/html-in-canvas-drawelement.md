@@ -57,7 +57,7 @@ graph TD
 
 ## 우리가 재본 것 (Chromium 141 + 플래그)
 
-문서만 읽으면 "이제 캔버스 안에서 폼도 되고 접근성도 된다"로 들린다. 그래서 켜 봤다. 환경은 컨테이너에 들어 있던 헤드리스 Chromium 141이고, `--enable-features=CanvasDrawElement` 로 켰다(브라우저에서는 `chrome://flags/#canvas-draw-element`). 오리진 트라이얼 구간(148~150, 연장 154)보다 이전, 개발자 트라이얼(138+) 쪽 빌드다.
+문서만 읽으면 "이제 캔버스 안에서 폼도 되고 접근성도 된다"로 들린다. 그래서 켜 봤다. 환경은 컨테이너에 들어 있던 헤드리스 Chromium 141이고, `--enable-features=CanvasDrawElement` 로 켰다(브라우저에서는 `chrome://flags/#canvas-draw-element`). 오리진 트라이얼 구간(148\~150, 연장 154)보다 이전, 개발자 트라이얼(138+) 쪽 빌드다.
 
 먼저 감지 결과. 이름이 이동 중이다.
 
@@ -143,4 +143,4 @@ card.style.transform = (returned || M).toString();
 
 - 제안 설명서: [WICG/html-in-canvas](https://github.com/WICG/html-in-canvas) · 사양 초안: [wicg.github.io/html-in-canvas](https://wicg.github.io/html-in-canvas/)
 - 크롬 오리진 트라이얼 안내: [Introducing the HTML-in-Canvas API origin trial](https://developer.chrome.com/blog/html-in-canvas-origin-trial) · [ChromeStatus 항목](https://chromestatus.com/feature/5172548013916160)
-- 이 글의 측정 환경: 헤드리스 Chromium 141(`--enable-features=CanvasDrawElement`). 오리진 트라이얼 빌드(148~150)에서는 위 ①~⑤ 중 일부가 이미 고쳐졌을 수 있다 — 데모 페이지가 두 이름을 모두 감지하는 이유다.
+- 이 글의 측정 환경: 헤드리스 Chromium 141(`--enable-features=CanvasDrawElement`). 오리진 트라이얼 빌드(148\~150)에서는 위 ①\~⑤ 중 일부가 이미 고쳐졌을 수 있다 — 데모 페이지가 두 이름을 모두 감지하는 이유다.
