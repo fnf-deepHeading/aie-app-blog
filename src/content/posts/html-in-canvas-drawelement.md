@@ -3,6 +3,7 @@ title: "캔버스 안의 HTML — 크롬 HTML-in-Canvas API를 플래그로 켜�
 description: "DOM 요소를 그대로 <canvas>에 그리는 HTML-in-Canvas API가 크롬 오리진 트라이얼에 들어갔다. 설명만 읽으면 '캔버스의 20년 숙제가 끝났다'로 들리는데, 플래그를 켜고 직접 그려보니 되는 것과 아직 안 되는 것의 경계가 꽤 분명했다. 감지 결과·히트테스트·리드백·DPR까지 재본 기록과, 폴백까지 갖춘 데모 페이지."
 category: "Tooling"
 pubDate: 2026-08-22
+author: "쿠키"
 tags: ["Tooling"]
 ---
 
